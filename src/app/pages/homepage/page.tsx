@@ -17,7 +17,7 @@ export default function SignupPage() {
       const toastId = toast.loading("Creating account...");
       await createUserWithEmailAndPassword(auth, email, password);
       toast.success("Signup successful! 🎉", { id: toastId });
-      router.push("/pages/quiz");
+      router.push("/pages/profile");
     } catch (err: any) {
       toast.error(err.message || "Signup failed.");
       setError(err.message);

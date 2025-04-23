@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -13,10 +14,13 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     try {
+      const toastId = toast.loading("Signing in...");
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/pages/quiz");
+      toast.success("Login successful!", { id: toastId });
+      router.push("/pages/profile");
     } catch (err: any) {
-      setError(err.message || "Login failed");
+      toast.error(err.message || "Login failed.");
+      setError(err.message);
     }
   };
 
