@@ -114,6 +114,14 @@ const EditQuestionPage = () => {
 
   return (
     <div className="max-w-xl mx-auto bg-slate-200 p-6 rounded shadow mt-10">
+      <button
+        onClick={() => router.back()}
+        className="mb-4 text-blue-600 hover:underline flex items-center space-x-1"
+      >
+        <span>←</span>
+        <span>Back</span>
+      </button>
+
       <h1 className="text-2xl font-semibold mb-6">Edit Question</h1>
       <form onSubmit={formik.handleSubmit} className="space-y-4">
         <div>

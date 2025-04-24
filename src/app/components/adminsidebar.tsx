@@ -10,7 +10,7 @@ import {
   QuerySnapshot,
   DocumentData,
 } from "firebase/firestore";
-import { FaTrash, FaEdit, FaBars, FaTimes } from "react-icons/fa";
+import { FaTrash, FaEdit, FaBars, FaTimes, FaEye } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -21,6 +21,10 @@ import {
   DialogContentText,
   DialogActions,
   Button,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
 } from "@mui/material";
 
 interface Answer {
@@ -42,6 +46,8 @@ const AdminSidebar = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [viewedQuestion, setViewedQuestion] = useState<Question | null>(null);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -93,6 +99,14 @@ const AdminSidebar = () => {
     router.push(`/pages/admin/edit/${id}`);
   };
 
+  const handleView = (question: Question) => {
+    setViewedQuestion(question);
+  };
+
+  const handleCloseViewModal = () => {
+    setViewedQuestion(null);
+  };
+
   return (
     <>
       {/* Hamburger Icon */}
@@ -118,7 +132,7 @@ const AdminSidebar = () => {
           </button>
         </div>
 
-        <h2 className="text-2xl font-bold mb-4">Question Bank</h2>
+        <h2 className="text-2xl font-bold mt-16 mb-4">Question Bank</h2>
 
         {loading ? (
           <div className="flex justify-center items-center h-40">
@@ -133,6 +147,12 @@ const AdminSidebar = () => {
               >
                 <p className="truncate max-w-xs">{question.text}</p>
                 <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleView(question)}
+                    className="text-green-400 hover:text-green-600"
+                  >
+                    <FaEye />
+                  </button>
                   <button
                     onClick={() => handleEdit(question.id)}
                     className="text-blue-400 hover:text-blue-600"
@@ -152,7 +172,7 @@ const AdminSidebar = () => {
         )}
       </div>
 
-      {/* Confirmation Dialog */}
+      {/* Delete Confirmation Dialog */}
       <Dialog open={openDialog} onClose={handleCancel}>
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
@@ -167,6 +187,59 @@ const AdminSidebar = () => {
           </Button>
           <Button onClick={handleConfirmDelete} color="error" autoFocus>
             Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* View Question Modal */}
+      <Dialog
+        open={!!viewedQuestion}
+        onClose={handleCloseViewModal}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Question Details</DialogTitle>
+        <DialogContent>
+          {viewedQuestion && (
+            <>
+              <Typography variant="subtitle1" gutterBottom>
+                <strong>Question:</strong> {viewedQuestion.text}
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                <strong>Explanation:</strong> {viewedQuestion.explanation}
+              </Typography>
+              <List>
+                {viewedQuestion.answers.map((answer) => (
+                  <ListItem
+                    key={answer.id}
+                    sx={{
+                      backgroundColor:
+                        answer.id === viewedQuestion.correctAnswerId
+                          ? "rgba(0, 255, 0, 0.1)"
+                          : "transparent",
+                    }}
+                  >
+                    <ListItemText
+                      primary={
+                        <>
+                          {answer.text}
+                          {answer.id === viewedQuestion.correctAnswerId && (
+                            <strong className="ml-2 text-green-600">
+                              (Correct)
+                            </strong>
+                          )}
+                        </>
+                      }
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseViewModal} color="primary">
+            Close
           </Button>
         </DialogActions>
       </Dialog>
