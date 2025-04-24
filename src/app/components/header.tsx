@@ -11,10 +11,14 @@ export default function Header({ username }: { username: string }) {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      toast.success("Signed out successfully 👋");
+      toast.success("Signed out successfully");
       router.push("/pages/login");
-    } catch (err: any) {
-      toast.error(err.message || "Sign out failed.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message || "Sign out failed.");
+      } else {
+        toast.error("An unexpected error occurred.");
+      }
     }
   };
 
