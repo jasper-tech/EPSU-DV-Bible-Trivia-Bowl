@@ -1,52 +1,40 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { FaBible, FaTrophy } from "react-icons/fa";
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<"quiz" | "achievements">("quiz");
   const router = useRouter();
 
-  const handleTabClick = (tab: "quiz" | "achievements") => {
-    setActiveTab(tab);
-    if (tab === "quiz") {
-      router.push("/pages/quiz");
-    }
-  };
-
   return (
-    <section className="bg-white shadow p-6 rounded w-full max-w-3xl mx-auto">
-      <div className="flex border-b mb-4">
-        <button
-          onClick={() => handleTabClick("quiz")}
-          className={`px-4 py-2 font-medium ${
-            activeTab === "quiz"
-              ? "border-b-2 border-blue-600 text-blue-600"
-              : "text-gray-600"
-          }`}
+    <section className="bg-white shadow p-6 rounded-lg w-full max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold mb-6 text-center">Dashboard</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Quiz Tile */}
+        <div
+          onClick={() => router.push("/pages/quiz")}
+          className="cursor-pointer bg-blue-100 hover:bg-blue-200 transition-colors p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center hover:shadow-lg"
         >
-          Quiz
-        </button>
-        <button
-          onClick={() => handleTabClick("achievements")}
-          className={`ml-4 px-4 py-2 font-medium ${
-            activeTab === "achievements"
-              ? "border-b-2 border-green-600 text-green-600"
-              : "text-gray-600"
-          }`}
-        >
-          Achievements
-        </button>
-      </div>
+          <FaBible className="text-blue-600 text-5xl mb-4" />
+          <h3 className="text-xl font-semibold text-blue-700 mb-2">
+            Bible Trivia Bowl
+          </h3>
+          <p className="text-blue-600">
+            Test your Bible knowledge and earn rewards!
+          </p>
+        </div>
 
-      {activeTab === "achievements" && (
-        <div>
-          <h3 className="text-xl font-semibold mb-2">Your Achievements</h3>
-          <p className="text-gray-700">
+        {/* Achievements Tile */}
+        <div className="bg-green-100 p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center hover:shadow-lg">
+          <FaTrophy className="text-green-600 text-5xl mb-4" />
+          <h3 className="text-xl font-semibold text-green-700 mb-2">
+            Achievements
+          </h3>
+          <p className="text-green-600">
             🏆 Nothing yet... Take some quizzes to earn achievements!
           </p>
         </div>
-      )}
+      </div>
     </section>
   );
 }
