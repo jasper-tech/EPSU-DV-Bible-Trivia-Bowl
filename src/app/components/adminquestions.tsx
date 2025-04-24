@@ -25,7 +25,7 @@ export default function AdminQuestions() {
       correctAnswerIndex: Yup.number()
         .min(0, "Invalid index")
         .required("Select the correct answer"),
-      explanation: Yup.string().required("Explanation is required"),
+      explanation: Yup.string(),
     }),
     onSubmit: async (values, { resetForm }) => {
       try {

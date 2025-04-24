@@ -10,7 +10,7 @@ import {
   QuerySnapshot,
   DocumentData,
 } from "firebase/firestore";
-import { FaTrash, FaEdit } from "react-icons/fa";
+import { FaTrash, FaEdit, FaBars, FaTimes } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -41,6 +41,7 @@ const AdminSidebar = () => {
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showSidebar, setShowSidebar] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -93,36 +94,63 @@ const AdminSidebar = () => {
   };
 
   return (
-    <div className="w-full max-w-xs bg-gray-800 text-white p-4">
-      <h2 className="text-2xl font-bold mb-4">Question Bank</h2>
+    <>
+      {/* Hamburger Icon */}
+      <div className="md:hidden p-4">
+        <button
+          onClick={() => setShowSidebar(true)}
+          className="text-white bg-gray-800 p-2 rounded"
+        >
+          <FaBars size={14} />
+        </button>
+      </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center h-40">
-          <CircularProgress color="primary" />
+      {/* Sidebar Drawer */}
+      <div
+        className={`fixed top-0 left-0 h-full bg-gray-800 text-white w-64 z-50 p-4 transform transition-transform duration-300 ease-in-out ${
+          showSidebar ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0 md:static md:block`}
+      >
+        {/* Close button (mobile only) */}
+        <div className="md:hidden flex justify-end mb-4">
+          <button onClick={() => setShowSidebar(false)} className="text-white">
+            <FaTimes size={20} />
+          </button>
         </div>
-      ) : (
-        <ul className="space-y-4">
-          {questions.map((question) => (
-            <li key={question.id} className="flex justify-between items-center">
-              <p className="truncate max-w-xs">{question.text}</p>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleEdit(question.id)}
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  <FaEdit />
-                </button>
-                <button
-                  onClick={() => confirmDelete(question.id)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <FaTrash />
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+
+        <h2 className="text-2xl font-bold mb-4">Question Bank</h2>
+
+        {loading ? (
+          <div className="flex justify-center items-center h-40">
+            <CircularProgress color="primary" />
+          </div>
+        ) : (
+          <ul className="space-y-4">
+            {questions.map((question) => (
+              <li
+                key={question.id}
+                className="flex justify-between items-center"
+              >
+                <p className="truncate max-w-xs">{question.text}</p>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleEdit(question.id)}
+                    className="text-blue-400 hover:text-blue-600"
+                  >
+                    <FaEdit />
+                  </button>
+                  <button
+                    onClick={() => confirmDelete(question.id)}
+                    className="text-red-400 hover:text-red-600"
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {/* Confirmation Dialog */}
       <Dialog open={openDialog} onClose={handleCancel}>
@@ -142,7 +170,7 @@ const AdminSidebar = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </div>
+    </>
   );
 };
 

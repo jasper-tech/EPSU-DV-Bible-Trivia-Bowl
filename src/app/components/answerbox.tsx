@@ -1,6 +1,6 @@
-// src/components/AnswerBox.tsx
-import React, { useState } from "react";
-import { Answer, AnswerBoxProps } from "../types/quiz";
+"use client";
+import React, { useState, useEffect } from "react";
+import { AnswerBoxProps } from "../types/quiz";
 
 const AnswerBox: React.FC<AnswerBoxProps> = ({
   answers,
@@ -9,81 +9,53 @@ const AnswerBox: React.FC<AnswerBoxProps> = ({
   correctAnswerId,
   disabled,
 }) => {
-  const [selectedAnswerId, setSelectedAnswerId] = useState<string | null>(null);
-
-  const handleAnswerSelect = (answer: Answer) => {
-    if (disabled) return;
-    setSelectedAnswerId(answer.id);
-  };
+  const [userInput, setUserInput] = useState("");
 
   const handleSubmit = () => {
-    if (!selectedAnswerId || disabled) return;
+    if (disabled || !userInput.trim()) return;
 
-    const selectedAnswer = answers.find(
-      (answer) => answer.id === selectedAnswerId
-    );
-    if (selectedAnswer) {
-      onSubmit(selectedAnswer);
-    }
+    const correctAnswer = answers.find((a) => a.id === correctAnswerId);
+    const normalizedInput = userInput.trim().toLowerCase();
+    const normalizedCorrect = correctAnswer?.text.trim().toLowerCase();
+
+    const isCorrect = normalizedInput === normalizedCorrect;
+
+    onSubmit({
+      id: userInput, // not a real ID, just passing user input
+      text: userInput,
+    });
+
+    // Optional: You can clear the input after submission
+    setUserInput("");
   };
 
-  // Reset selected answer when getting new questions
-  React.useEffect(() => {
-    setSelectedAnswerId(null);
+  useEffect(() => {
+    setUserInput(""); // reset input when question changes
   }, [answers]);
 
-  const getAnswerStyles = (answerId: string) => {
-    const baseStyles =
-      "p-4 border rounded-lg mb-3 cursor-pointer transition-all duration-200";
-    const selectedStyles = "border-2";
-
-    // If we've submitted an answer and received feedback
-    if (isAnswerCorrect !== null) {
-      if (answerId === correctAnswerId) {
-        // Correct answer
-        return `${baseStyles} ${selectedStyles} bg-green-100 border-green-500 text-green-800`;
-      } else if (answerId === selectedAnswerId) {
-        // User's incorrect answer
-        return `${baseStyles} ${selectedStyles} bg-red-100 border-red-500 text-red-800`;
-      } else {
-        // Other answers
-        return `${baseStyles} bg-gray-50 border-gray-300 text-gray-500`;
-      }
-    }
-
-    // Before submission
-    return selectedAnswerId === answerId
-      ? `${baseStyles} ${selectedStyles} bg-blue-100 border-blue-500`
-      : `${baseStyles} hover:bg-gray-100 hover:border-gray-400 border-gray-300`;
-  };
-
   return (
-    <div className="w-full">
-      <div className="space-y-2">
-        {answers.map((answer) => (
-          <div
-            key={answer.id}
-            className={getAnswerStyles(answer.id)}
-            onClick={() => handleAnswerSelect(answer)}
-            data-testid={`answer-option-${answer.id}`}
-          >
-            {answer.text}
-          </div>
-        ))}
-      </div>
-
+    <div className="w-full max-w-xl">
+      <input
+        type="text"
+        placeholder="Type your answer here..."
+        value={userInput}
+        onChange={(e) => setUserInput(e.target.value)}
+        disabled={disabled}
+        className="w-full px-4 py-2 border rounded-md text-black focus:outline-none mb-3"
+        data-testid="text-answer-input"
+      />
       <button
         onClick={handleSubmit}
-        disabled={!selectedAnswerId || disabled}
-        className={`mt-4 py-2 px-6 rounded-md font-medium text-white transition-colors 
-        ${
-          !selectedAnswerId || disabled
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-blue-500 hover:bg-blue-600"
-        }`}
+        disabled={disabled || !userInput.trim()}
+        className={`w-full py-2 px-6 rounded-md font-medium text-white transition-colors
+          ${
+            disabled || !userInput.trim()
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-500 hover:bg-blue-600"
+          }`}
         data-testid="submit-answer"
       >
-        Submit Answer
+        Submit{" "}
       </button>
 
       {isAnswerCorrect !== null && (
@@ -98,7 +70,7 @@ const AnswerBox: React.FC<AnswerBoxProps> = ({
             {isAnswerCorrect
               ? "✓ Correct!"
               : `✗ Incorrect. The correct answer was: ${
-                  answers.find((a) => a.id === correctAnswerId)?.text
+                  answers.find((a) => a.id === correctAnswerId)?.text || ""
                 }`}
           </p>
         </div>

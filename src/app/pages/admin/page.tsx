@@ -2,6 +2,7 @@
 
 import AdminQuestions from "@/app/components/adminquestions";
 import AdminSidebar from "@/app/components/adminsidebar";
+import AdminHeader from "@/app/components/adminheader";
 
 const AdminPage = () => {
   return (
@@ -12,8 +13,14 @@ const AdminPage = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-6 bg-gray-100">
-        <AdminQuestions />
+      <div className="flex-1 flex flex-col bg-gray-100">
+        {/* Admin Header */}
+        <AdminHeader />
+
+        {/* Page Content */}
+        <div className="p-6 flex-1">
+          <AdminQuestions />
+        </div>
       </div>
     </div>
   );

@@ -51,7 +51,7 @@ const EditQuestionPage = () => {
     initialValues: {
       text: question?.text || "",
       explanation: question?.explanation || "",
-      answers: question?.answers.map((a) => a.text) || ["", "", "", ""],
+      answers: question?.answers.map((a) => a.text) || [""],
       correctAnswerIndex:
         question?.answers.findIndex((a) => a.id === question.correctAnswerId) ??
         0,
@@ -85,6 +85,24 @@ const EditQuestionPage = () => {
       }
     },
   });
+
+  const addAnswer = () => {
+    formik.setFieldValue("answers", [...formik.values.answers, ""]);
+  };
+
+  const removeAnswer = (index: number) => {
+    const updatedAnswers = formik.values.answers.filter((_, i) => i !== index);
+    let correctIndex = formik.values.correctAnswerIndex;
+
+    if (index < correctIndex) correctIndex -= 1;
+    if (index === correctIndex) correctIndex = 0;
+
+    formik.setValues({
+      ...formik.values,
+      answers: updatedAnswers,
+      correctAnswerIndex: correctIndex,
+    });
+  };
 
   if (!question) {
     return (
@@ -128,8 +146,24 @@ const EditQuestionPage = () => {
                 className="flex-1 p-2 border rounded"
                 placeholder={`Answer ${idx + 1}`}
               />
+              {formik.values.answers.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeAnswer(idx)}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           ))}
+          <button
+            type="button"
+            onClick={addAnswer}
+            className="mt-2 px-4 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+          >
+            + Add Answer
+          </button>
         </div>
 
         <div>

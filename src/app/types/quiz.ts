@@ -8,6 +8,7 @@ export interface Answer {
 export interface Question {
   id: string;
   text: string;
+  questionType: "multiple-choice" | "text";
   answers: Answer[];
   correctAnswerId: string;
   explanation?: string;
@@ -45,6 +46,7 @@ export interface AnswerBoxProps {
   isAnswerCorrect: boolean | null;
   correctAnswerId: string;
   disabled: boolean;
+  questionType: "multiple-choice" | "text";
 }
 
 // Props for the Timer component

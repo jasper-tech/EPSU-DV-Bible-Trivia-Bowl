@@ -2,24 +2,35 @@
 
 import { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../lib/firebase";
-import { db } from "../../lib/firebase";
+import { auth, db } from "../../lib/firebase";
 import { setDoc, doc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import Link from "next/link";
+import { FirebaseError } from "firebase/app";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error] = useState("");
+  const [accountExists, setAccountExists] = useState(false);
   const router = useRouter();
 
-  const handleSignup = async () => {
-    try {
-      const toastId = toast.loading("Creating account...");
+  const isFirebaseError = (err: unknown): err is FirebaseError => {
+    return (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      typeof (err as FirebaseError).code === "string"
+    );
+  };
 
-      // Create user in Firebase Auth
+  const handleSignup = async () => {
+    setAccountExists(false);
+
+    const toastId = toast.loading("Creating account...");
+
+    try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -28,7 +39,6 @@ export default function SignupPage() {
 
       const user = userCredential.user;
 
-      // Save extra info to Firestore
       await setDoc(doc(db, "users", user.uid), {
         name,
         email,
@@ -38,8 +48,15 @@ export default function SignupPage() {
       toast.success("Signup successful! 🎉", { id: toastId });
       router.push("/pages/profile");
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        toast.error(err.message || "Sign Up failed.");
+      toast.dismiss(toastId); // Dismiss loading toast
+      if (isFirebaseError(err)) {
+        if (err.code === "auth/email-already-in-use") {
+          setAccountExists(true);
+          toast.error("Your account already exists.");
+          // You can redirect to login here as well if needed
+        } else {
+          toast.error(err.message);
+        }
       } else {
         toast.error("An unexpected error occurred.");
       }
@@ -48,9 +65,7 @@ export default function SignupPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-200 px-4">
-      <h1 className="text-4xl font-bold mb-4">
-        📖 Bible Trivia Bowl - Sign Up
-      </h1>
+      <h1 className="text-4xl font-bold mb-4">Bible Trivia Bowl</h1>
       <p className="text-lg mb-6 text-center">Create your account to begin!</p>
 
       <input
@@ -74,7 +89,14 @@ export default function SignupPage() {
         onChange={(e) => setPassword(e.target.value)}
       />
 
-      {error && <p className="text-red-800 mb-4">{error}</p>}
+      {accountExists && (
+        <div className="text-red-600 mb-4">
+          Your account already exists.{" "}
+          <Link href="/pages/login" className="text-blue-600 underline">
+            Login?
+          </Link>
+        </div>
+      )}
 
       <button
         onClick={handleSignup}

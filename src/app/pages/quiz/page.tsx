@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { Answer, QuizState } from "../../types/quiz";
-import { sampleQuestions } from "../../Data/samplequestions";
+import { useFetchQuestions } from "../../Data/samplequestions";
 import ScoreBanner from "../../components/scorebanner";
 import AnswerBox from "../../components/answerbox";
 import Timer from "../../components/timer";
 import QuestionCard from "../../components/questioncard";
 
 const Quiz: React.FC = () => {
+  const { questions, loading, error } = useFetchQuestions();
+
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: 0,
     score: 0,
@@ -22,11 +24,10 @@ const Quiz: React.FC = () => {
   const [showScore, setShowScore] = useState<boolean>(false);
 
   const currentQuestion =
-    sampleQuestions.length > 0
-      ? sampleQuestions[quizState.currentQuestionIndex]
+    questions.length > 0
+      ? questions[quizState.currentQuestionIndex]
       : undefined;
 
-  // Effect when the quiz is completed, we display the score
   useEffect(() => {
     if (quizState.isQuizCompleted) {
       setShowScore(true);
@@ -34,14 +35,21 @@ const Quiz: React.FC = () => {
   }, [quizState.isQuizCompleted]);
 
   useEffect(() => {
-    setTimeRemaining(45); // Reset timer every time a new question appears
+    setTimeRemaining(45);
     setIsTimerActive(true);
   }, [quizState.currentQuestionIndex]);
 
-  const handleSubmitAnswer = (answer: Answer) => {
+  const handleSubmitAnswer = (userAnswer: Answer) => {
     if (!currentQuestion) return;
     setIsTimerActive(false);
-    const isCorrect = answer.id === currentQuestion.correctAnswerId;
+
+    const correctAnswer = currentQuestion.answers.find(
+      (a) => a.id === currentQuestion.correctAnswerId
+    );
+
+    const normalizedCorrect = correctAnswer?.text.trim().toLowerCase();
+    const normalizedUserInput = userAnswer.text.trim().toLowerCase();
+    const isCorrect = normalizedUserInput === normalizedCorrect;
 
     setQuizState((prev) => ({
       ...prev,
@@ -51,7 +59,7 @@ const Quiz: React.FC = () => {
         ...prev.userAnswers,
         {
           questionId: currentQuestion.id,
-          answerId: answer.id,
+          answerId: userAnswer.text,
           isCorrect,
         },
       ],
@@ -60,7 +68,7 @@ const Quiz: React.FC = () => {
 
   const handleNextQuestion = () => {
     const nextIndex = quizState.currentQuestionIndex + 1;
-    if (nextIndex >= sampleQuestions.length) {
+    if (nextIndex >= questions.length) {
       setQuizState((prev) => ({ ...prev, isQuizCompleted: true }));
     } else {
       setQuizState((prev) => ({
@@ -87,10 +95,20 @@ const Quiz: React.FC = () => {
     }));
   };
 
-  if (!currentQuestion) {
+  if (loading) {
     return (
       <div className="flex flex-col items-center justify-center p-4">
         <div className="text-xl font-semibold">Loading quiz questions...</div>
+      </div>
+    );
+  }
+
+  if (error || !currentQuestion) {
+    return (
+      <div className="flex flex-col items-center justify-center p-4">
+        <div className="text-xl text-red-600 font-semibold">
+          Failed to load questions. Please try again later.
+        </div>
       </div>
     );
   }
@@ -101,7 +119,7 @@ const Quiz: React.FC = () => {
         <>
           <ScoreBanner
             score={quizState.score}
-            totalQuestions={sampleQuestions.length}
+            totalQuestions={questions.length}
             currentQuestionIndex={quizState.currentQuestionIndex}
           />
 
@@ -117,7 +135,7 @@ const Quiz: React.FC = () => {
           <QuestionCard
             question={currentQuestion}
             questionNumber={quizState.currentQuestionIndex + 1}
-            totalQuestions={sampleQuestions.length}
+            totalQuestions={questions.length}
           />
 
           <AnswerBox
@@ -125,7 +143,8 @@ const Quiz: React.FC = () => {
             onSubmit={handleSubmitAnswer}
             isAnswerCorrect={quizState.isAnswerCorrect}
             correctAnswerId={currentQuestion.correctAnswerId}
-            disabled={quizState.isAnswerCorrect !== null || !isTimerActive}
+            disabled={quizState.isAnswerCorrect !== null}
+            questionType={currentQuestion.questionType}
           />
 
           {quizState.isAnswerCorrect !== null && (
@@ -133,7 +152,7 @@ const Quiz: React.FC = () => {
               onClick={handleNextQuestion}
               className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-md transition duration-200 mt-4"
             >
-              {quizState.currentQuestionIndex === sampleQuestions.length - 1
+              {quizState.currentQuestionIndex === questions.length - 1
                 ? "Finish Quiz"
                 : "Next Question"}
             </button>
@@ -141,7 +160,7 @@ const Quiz: React.FC = () => {
         </>
       ) : (
         <div className="mt-4 text-xl font-semibold">
-          You scored {quizState.score} out of {sampleQuestions.length}!
+          You scored {quizState.score} out of {questions.length}!
         </div>
       )}
     </div>
