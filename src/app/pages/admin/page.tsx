@@ -3,13 +3,19 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import { useRouter, usePathname } from "next/navigation";
-import { AddCircle, People, Quiz } from "@mui/icons-material";
+import {
+  AddCircle,
+  People,
+  Quiz,
+  UploadFileOutlined,
+} from "@mui/icons-material";
 import clsx from "clsx";
 
 const tiles = [
   { label: "Add Question", href: "/pages/admin/add-question" },
   { label: "Manage Users", href: "/pages/admin/manage-users" },
   { label: "Create Quiz", href: "/pages/admin/create-quiz" },
+  { label: "Upload Quiz", href: "/pages/admin/upload-quiz" },
 ];
 
 const AdminPage = () => {
@@ -58,6 +64,17 @@ const AdminPage = () => {
 
           {tile.label === "Create Quiz" && (
             <Quiz
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(tile.href);
+              }}
+              className="absolute bottom-3 right-3 text-blue-500 hover:text-blue-700"
+              fontSize="large"
+            />
+          )}
+
+          {tile.label === "Upload Quiz" && (
+            <UploadFileOutlined
               onClick={(e) => {
                 e.stopPropagation();
                 router.push(tile.href);

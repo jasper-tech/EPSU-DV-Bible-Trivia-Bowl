@@ -1,5 +1,3 @@
-// src/components/admin/ViewQuizDialog.tsx
-
 import {
   Dialog,
   DialogTitle,

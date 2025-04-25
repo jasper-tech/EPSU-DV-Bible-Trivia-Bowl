@@ -9,7 +9,7 @@ import Timer from "../../components/timer";
 import QuestionCard from "../../components/questioncard";
 
 const Quiz: React.FC = () => {
-  const { questions, loading, error } = useFetchQuestions();
+  const { questions, loading, error, activeQuizTitle } = useFetchQuestions();
 
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: 0,
@@ -107,7 +107,7 @@ const Quiz: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center p-4">
         <div className="text-xl text-red-600 font-semibold">
-          Failed to load questions. Please try again later.
+          {error || "No active quiz found or no questions available."}
         </div>
       </div>
     );
@@ -115,6 +115,12 @@ const Quiz: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center w-full max-w-4xl mx-auto p-4 space-y-6">
+      {activeQuizTitle && (
+        <h1 className="text-2xl font-bold text-center mb-4">
+          {activeQuizTitle}
+        </h1>
+      )}
+
       {!showScore ? (
         <>
           <ScoreBanner
@@ -159,8 +165,11 @@ const Quiz: React.FC = () => {
           )}
         </>
       ) : (
-        <div className="mt-4 text-xl font-semibold">
-          You scored {quizState.score} out of {questions.length}!
+        <div className="flex flex-col items-center space-y-4">
+          <div className="text-2xl font-semibold">Quiz Completed!</div>
+          <div className="text-xl">
+            You scored {quizState.score} out of {questions.length}!
+          </div>
         </div>
       )}
     </div>

@@ -1,5 +1,3 @@
-// src/components/admin/QuizzesTab.tsx
-
 import { FaEye, FaTrash } from "react-icons/fa";
 import { Typography, Button } from "@mui/material";
 import { Quiz } from "../../types/quiz";
