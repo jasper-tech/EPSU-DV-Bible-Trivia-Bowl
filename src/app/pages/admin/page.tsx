@@ -1,22 +1,51 @@
 "use client";
 
-import AdminQuestions from "@/app/components/adminquestions";
-import AdminHeader from "@/app/components/adminheader";
+import React from "react";
+import { Box, Typography } from "@mui/material";
+import { useRouter } from "next/navigation";
+import { AddCircle } from "@mui/icons-material";
+import clsx from "clsx";
+import { usePathname } from "next/navigation";
+
+const tiles = [
+  { label: "Add Question", href: "/pages/admin/add-question" },
+  { label: "Manage Users", href: "/pages/admin/manage-users" },
+];
 
 const AdminPage = () => {
-  return (
-    <div className="flex min-h-screen">
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col bg-gray-100">
-        {/* Admin Header */}
-        <AdminHeader />
+  const router = useRouter();
+  const pathname = usePathname();
 
-        {/* Page Content */}
-        <div className="p-6 flex-1">
-          <AdminQuestions />
-        </div>
-      </div>
-    </div>
+  return (
+    <Box className="grid grid-cols-1 sm:grid-cols-3 gap-6 p-10 justify-items-center">
+      {tiles.map((tile) => (
+        <Box
+          key={tile.href}
+          onClick={() => router.push(tile.href)}
+          className={clsx(
+            "relative w-64 h-40 rounded-xl shadow-md flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-105",
+            pathname === tile.href
+              ? "bg-blue-600 text-white"
+              : "bg-white text-gray-800"
+          )}
+        >
+          <Typography variant="h6" className="font-semibold">
+            {tile.label}
+          </Typography>
+
+          {tile.label === "Add Question" && (
+            <AddCircle
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push("/pages/admin/add-question");
+              }}
+              className="absolute bottom-3 right-3 text-blue-500 hover:text-blue-700"
+              fontSize="large"
+            />
+          )}
+        </Box>
+      ))}
+    </Box>
   );
 };
 

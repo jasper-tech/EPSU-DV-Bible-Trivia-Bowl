@@ -6,9 +6,11 @@ import * as Yup from "yup";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 export default function AdminQuestions() {
   const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
 
   const formik = useFormik({
     initialValues: {
@@ -58,6 +60,14 @@ export default function AdminQuestions() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
+      <button
+        onClick={() => router.back()}
+        className="mb-4 text-blue-600 hover:underline flex items-center space-x-1"
+      >
+        <span>←</span>
+        <span>Back</span>
+      </button>
+
       <div className="max-w-2xl mx-auto bg-white shadow rounded-lg p-6">
         <h1 className="text-2xl font-bold mb-6 text-center text-purple-700">
           🧠 Quizmaster Panel – Bible Trivia Bowl
