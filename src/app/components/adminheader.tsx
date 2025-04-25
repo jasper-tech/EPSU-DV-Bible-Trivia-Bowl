@@ -6,25 +6,12 @@ import Image from "next/image";
 import {
   FaSignOutAlt,
   FaBars,
-  FaTrash,
-  FaEdit,
-  FaEye,
   FaTimes,
+  FaQuestion,
+  FaClipboardList,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  CircularProgress,
-} from "@mui/material";
+import { CircularProgress, Tabs, Tab, Box } from "@mui/material";
 
 import { auth, db } from "../lib/firebase";
 import {
@@ -38,33 +25,26 @@ import {
 } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 
-interface UserData {
-  name: string;
-  role: string;
-  image: string;
-}
+import QuestionsTab from "./admin_comp/questiontab";
+import QuizzesTab from "./admin_comp/quizzestab";
+import DeleteConfirmDialog from "./deleteconfirmdialog";
+import ViewQuestionDialog from "./viewquestiondialog";
+import ViewQuizDialog from "./viewquizdialog";
 
-interface Answer {
-  id: string;
-  text: string;
-}
-
-interface Question {
-  id: string;
-  text: string;
-  explanation: string;
-  answers: Answer[];
-  correctAnswerId: string;
-}
+import { UserData, Question, Quiz } from "../types/quiz";
 
 const AdminHeader = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [quizzesLoading, setQuizzesLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [viewedQuestion, setViewedQuestion] = useState<Question | null>(null);
+  const [viewedQuiz, setViewedQuiz] = useState<Quiz | null>(null);
+  const [activeTab, setActiveTab] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -98,6 +78,7 @@ const AdminHeader = () => {
     fetchUserData();
   }, [router]);
 
+  // Fetch questions
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, "questions"),
@@ -111,6 +92,28 @@ const AdminHeader = () => {
       (error) => {
         console.error("Error fetching questions:", error);
         toast.error("Failed to load questions.");
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch quizzes
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, "quizzes"),
+      (snapshot: QuerySnapshot<DocumentData>) => {
+        const loadedQuizzes: Quiz[] = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as Omit<Quiz, "id">),
+        }));
+        setQuizzes(loadedQuizzes);
+        setQuizzesLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching quizzes:", error);
+        toast.error("Failed to load quizzes.");
+        setQuizzesLoading(false);
       }
     );
 
@@ -135,15 +138,24 @@ const AdminHeader = () => {
 
   const handleConfirmDelete = async () => {
     if (selectedId) {
+      const collection = activeTab === 0 ? "questions" : "quizzes";
+      const successMessage =
+        activeTab === 0
+          ? "Question deleted successfully!"
+          : "Quiz deleted successfully!";
+      const errorMessage =
+        activeTab === 0 ? "Error deleting question." : "Error deleting quiz.";
+
       try {
-        await deleteDoc(doc(db, "questions", selectedId));
-        toast.success("Question deleted successfully!");
-        setOpenDialog(false);
-        setSelectedId(null);
+        await deleteDoc(doc(db, collection, selectedId));
+        toast.success(successMessage);
       } catch (error) {
         console.error("Delete error:", error);
-        toast.error("Error deleting question.");
+        toast.error(errorMessage);
       }
+
+      setOpenDialog(false);
+      setSelectedId(null);
     }
   };
 
@@ -155,22 +167,33 @@ const AdminHeader = () => {
   const handleEdit = (id: string) => {
     router.push(`/pages/admin/edit/${id}`);
   };
+
   const handleView = (question: Question) => {
     setViewedQuestion(question);
   };
 
+  const handleViewQuiz = (quiz: Quiz) => {
+    setViewedQuiz(quiz);
+  };
+
   const handleCloseViewModal = () => {
     setViewedQuestion(null);
+    setViewedQuiz(null);
+  };
+
+  const handleChangeTab = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
   };
 
   return (
     <>
+      {/* Header */}
       <header className="w-full bg-gray-900 text-white px-4 py-3 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0 relative">
         {/* Left: Hamburger + User */}
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className=" text-white bg-gray-700 p-2 rounded"
+            className="text-white bg-gray-700 p-2 rounded"
           >
             <FaBars />
           </button>
@@ -205,128 +228,95 @@ const AdminHeader = () => {
         </div>
       </header>
 
-      {/* Sidebar Panel */}
+      {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full bg-gray-800 text-white w-64 z-50 p-4 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 h-full bg-gray-800 text-white w-72 z-50 flex flex-col transform transition-transform duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Question Bank</h2>
+        <div className="flex justify-between items-center p-4 border-b border-gray-700">
+          <h2 className="text-xl font-bold">Admin Dashboard</h2>
           <button onClick={() => setSidebarOpen(false)} className="text-white">
             <FaTimes />
           </button>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center items-center h-40">
-            <CircularProgress color="primary" />
+        <Box sx={{ width: "100%" }}>
+          <Tabs
+            value={activeTab}
+            onChange={handleChangeTab}
+            variant="fullWidth"
+            sx={{
+              borderBottom: 1,
+              borderColor: "divider",
+              "& .MuiTab-root": {
+                color: "white",
+                opacity: 0.7,
+                "&.Mui-selected": {
+                  color: "white",
+                  opacity: 1,
+                },
+              },
+              "& .MuiTabs-indicator": {
+                backgroundColor: "white",
+              },
+            }}
+          >
+            <Tab icon={<FaQuestion />} label="Questions" />
+            <Tab icon={<FaClipboardList />} label="Quizzes" />
+          </Tabs>
+        </Box>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          {/* Questions Tab */}
+          <div role="tabpanel" hidden={activeTab !== 0}>
+            {loading ? (
+              <div className="flex justify-center items-center h-40">
+                <CircularProgress color="inherit" />
+              </div>
+            ) : (
+              <QuestionsTab
+                questions={questions}
+                onView={handleView}
+                onEdit={handleEdit}
+                onDelete={confirmDelete}
+                router={router}
+              />
+            )}
           </div>
-        ) : (
-          <ul className="space-y-4">
-            {questions.map((question) => (
-              <li
-                key={question.id}
-                className="flex justify-between items-center"
-              >
-                <p className="truncate max-w-xs">{question.text}</p>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleView(question)}
-                    className="text-green-400 hover:text-green-600"
-                  >
-                    <FaEye />
-                  </button>
-                  <button
-                    onClick={() => handleEdit(question.id)}
-                    className="text-blue-400 hover:text-blue-600"
-                  >
-                    <FaEdit />
-                  </button>
-                  <button
-                    onClick={() => confirmDelete(question.id)}
-                    className="text-red-400 hover:text-red-600"
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+
+          {/* Quizzes Tab */}
+          <div role="tabpanel" hidden={activeTab !== 1}>
+            {quizzesLoading ? (
+              <div className="flex justify-center items-center h-40">
+                <CircularProgress color="inherit" />
+              </div>
+            ) : (
+              <QuizzesTab
+                quizzes={quizzes}
+                onView={handleViewQuiz}
+                onDelete={confirmDelete}
+                router={router}
+              />
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Confirm Delete Dialog */}
-      <Dialog open={openDialog} onClose={handleCancel}>
-        <DialogTitle>Confirm Deletion</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete this question? This action cannot be
-            undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancel} color="inherit">
-            Cancel
-          </Button>
-          <Button onClick={handleConfirmDelete} color="error" autoFocus>
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Dialogs */}
+      <DeleteConfirmDialog
+        open={openDialog}
+        onClose={handleCancel}
+        onConfirm={handleConfirmDelete}
+        itemType={activeTab === 0 ? "question" : "quiz"}
+      />
 
-      {/* View Question Modal */}
-      <Dialog
-        open={!!viewedQuestion}
+      <ViewQuestionDialog
+        question={viewedQuestion}
         onClose={handleCloseViewModal}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Question Details</DialogTitle>
-        <DialogContent>
-          {viewedQuestion && (
-            <>
-              <Typography variant="subtitle1" gutterBottom>
-                <strong>Question:</strong> {viewedQuestion.text}
-              </Typography>
-              <Typography variant="body2" gutterBottom>
-                <strong>Explanation:</strong> {viewedQuestion.explanation}
-              </Typography>
-              <List>
-                {viewedQuestion.answers.map((answer) => (
-                  <ListItem
-                    key={answer.id}
-                    sx={{
-                      backgroundColor:
-                        answer.id === viewedQuestion.correctAnswerId
-                          ? "rgba(0, 255, 0, 0.1)"
-                          : "transparent",
-                    }}
-                  >
-                    <ListItemText
-                      primary={
-                        <>
-                          {answer.text}
-                          {answer.id === viewedQuestion.correctAnswerId && (
-                            <strong className="ml-2 text-green-600">
-                              (Correct)
-                            </strong>
-                          )}
-                        </>
-                      }
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            </>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseViewModal} color="primary">
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+      />
+
+      <ViewQuizDialog quiz={viewedQuiz} onClose={handleCloseViewModal} />
     </>
   );
 };

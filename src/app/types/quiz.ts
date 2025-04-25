@@ -4,6 +4,12 @@ export interface Answer {
   text: string;
 }
 
+export interface UserData {
+  name: string;
+  role: string;
+  image: string;
+}
+
 // Represents a single question with its answers
 export interface Question {
   id: string;
@@ -23,13 +29,19 @@ export interface UserAnswer {
   isCorrect: boolean;
 }
 
-// The overall state of the quiz
-export interface QuizState {
-  currentQuestionIndex: number;
-  score: number;
-  isAnswerCorrect: boolean | null;
-  isQuizCompleted: boolean;
-  userAnswers: UserAnswer[];
+export interface QuizQuestion {
+  questionId: string;
+  text: string;
+  answers: Answer[];
+  correctAnswerId: string;
+}
+
+export interface Quiz {
+  id: string;
+  quizTitle: string;
+  createdAt: any;
+  questions: QuizQuestion[];
+  responses: any[];
 }
 
 // Props for the QuestionCard component

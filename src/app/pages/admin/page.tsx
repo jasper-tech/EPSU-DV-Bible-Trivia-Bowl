@@ -2,14 +2,14 @@
 
 import React from "react";
 import { Box, Typography } from "@mui/material";
-import { useRouter } from "next/navigation";
-import { AddCircle } from "@mui/icons-material";
+import { useRouter, usePathname } from "next/navigation";
+import { AddCircle, People, Quiz } from "@mui/icons-material";
 import clsx from "clsx";
-import { usePathname } from "next/navigation";
 
 const tiles = [
   { label: "Add Question", href: "/pages/admin/add-question" },
   { label: "Manage Users", href: "/pages/admin/manage-users" },
+  { label: "Create Quiz", href: "/pages/admin/create-quiz" },
 ];
 
 const AdminPage = () => {
@@ -33,11 +33,34 @@ const AdminPage = () => {
             {tile.label}
           </Typography>
 
+          {/* Icon Mapping */}
           {tile.label === "Add Question" && (
             <AddCircle
               onClick={(e) => {
                 e.stopPropagation();
-                router.push("/pages/admin/add-question");
+                router.push(tile.href);
+              }}
+              className="absolute bottom-3 right-3 text-blue-500 hover:text-blue-700"
+              fontSize="large"
+            />
+          )}
+
+          {tile.label === "Manage Users" && (
+            <People
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(tile.href);
+              }}
+              className="absolute bottom-3 right-3 text-blue-500 hover:text-blue-700"
+              fontSize="large"
+            />
+          )}
+
+          {tile.label === "Create Quiz" && (
+            <Quiz
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(tile.href);
               }}
               className="absolute bottom-3 right-3 text-blue-500 hover:text-blue-700"
               fontSize="large"

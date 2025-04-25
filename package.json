@@ -13,6 +13,7 @@
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^7.0.2",
     "@mui/material": "^7.0.2",
+    "@mui/x-data-grid": "^8.1.0",
     "firebase": "^11.6.0",
     "formik": "^2.4.6",
     "next": "15.3.1",
