@@ -108,6 +108,7 @@ const UserAchievements: React.FC = () => {
 
     fetchUserScores();
   }, [user, quizTitle]);
+
   // Function to format the timestamp
   const formatDate = (timestamp: any) => {
     if (!timestamp) return "";

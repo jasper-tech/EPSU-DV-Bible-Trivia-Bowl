@@ -27,7 +27,7 @@ export default function LoginPage() {
           Login to Trivia Bowl
         </h1>
         <p className="mb-6 text-center text-gray-600">
-          Welcome back! Let's test your Bible knowledge.
+          Welcome back! Ready to test your bible knowledge?
         </p>
 
         <form onSubmit={handleLogin} className="space-y-4">

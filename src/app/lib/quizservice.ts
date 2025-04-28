@@ -43,7 +43,7 @@ export const saveQuizScore = async (
 export const getQuizLeaderboard = async (
   quizTitle: string,
   limitCount = 10
-): Promise<UserScoreEntry[]> => {
+) => {
   try {
     const leaderboardQuery = query(
       collection(db, "quizResults"),
@@ -57,7 +57,7 @@ export const getQuizLeaderboard = async (
     const leaderboard = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    })) as UserScoreEntry[];
+    }));
 
     return leaderboard;
   } catch (error) {

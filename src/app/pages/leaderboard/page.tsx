@@ -149,7 +149,7 @@ const Leaderboard: React.FC = () => {
                     key={entry.id}
                     className={
                       isCurrentUser
-                        ? "bg-blue-100" // Highlight current user's row
+                        ? "bg-blue-100"
                         : index % 2 === 0
                         ? "bg-white"
                         : "bg-gray-50"
