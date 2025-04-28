@@ -25,7 +25,10 @@ export default function Dashboard() {
         </div>
 
         {/* Achievements Tile */}
-        <div className="bg-green-100 p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center hover:shadow-lg">
+        <div
+          onClick={() => router.push("/pages/achievements")}
+          className="cursor-pointer bg-green-100 hover:bg-green-200 transition-colors p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center hover:shadow-lg"
+        >
           <FaTrophy className="text-green-600 text-5xl mb-4" />
           <h3 className="text-xl font-semibold text-green-700 mb-2">
             Achievements

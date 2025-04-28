@@ -1,11 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  getQuizLeaderboard,
-  getAvailableQuizzes,
-  getUserDisplayName,
-} from "@/app/lib/quizservice";
+import { getQuizLeaderboard, getAvailableQuizzes } from "@/app/lib/quizservice";
 import { useAuth } from "@/app/context/AuthContext";
 
 interface LeaderboardEntry {
@@ -59,7 +55,6 @@ const Leaderboard: React.FC = () => {
 
         const data = await getQuizLeaderboard(quizTitle, 20);
 
-        // No need to fetch display names separately anymore
         setLeaderboardData(data as LeaderboardEntry[]);
       } catch (err) {
         console.error("Error fetching leaderboard:", err);
@@ -186,72 +181,6 @@ const Leaderboard: React.FC = () => {
               })}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* Your Recent Scores Section */}
-      {user && (
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">Your Recent Scores</h2>
-          {leaderboardData.filter((entry) => entry.userId === user.uid).length >
-          0 ? (
-            <div className="bg-white shadow-lg rounded-lg p-4">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Rank
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Score
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Percentage
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {leaderboardData
-                    .filter((entry) => entry.userId === user.uid)
-                    .map((entry, index) => {
-                      // Find the global rank of this entry
-                      const globalRank =
-                        leaderboardData.findIndex((e) => e.id === entry.id) + 1;
-
-                      return (
-                        <tr key={entry.id} className="bg-blue-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-800">
-                            {globalRank}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-800">
-                            {entry.score} / {entry.totalQuestions}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-800">
-                            {entry.percentage.toFixed(1)}%
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-800">
-                            {formatDate(entry.timestamp)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="bg-white shadow-lg rounded-lg p-6 text-center">
-              <p className="text-gray-600">You haven't taken this quiz yet.</p>
-              <button
-                onClick={() => (window.location.href = "/pages/quiz")}
-                className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-200"
-              >
-                Take Quiz Now
-              </button>
-            </div>
-          )}
         </div>
       )}
 
