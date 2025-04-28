@@ -25,7 +25,7 @@ const DeleteConfirmDialog = ({
       <DialogTitle>Confirm Deletion</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          Are you sure you want to delete this {itemType}? This action cannot be
+          Are you sure you want to delete {itemType}? This action cannot be
           undone.
         </DialogContentText>
       </DialogContent>
