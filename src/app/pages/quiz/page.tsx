@@ -9,6 +9,7 @@ import Timer from "../../components/timer";
 import QuestionCard from "../../components/questioncard";
 import { useAuth } from "@/app/context/AuthContext";
 import { saveQuizScore } from "@/app/lib/quizservice";
+
 const Quiz: React.FC = () => {
   const { questions, loading, error, activeQuizTitle } = useFetchQuestions();
   const { user } = useAuth();
@@ -55,7 +56,7 @@ const Quiz: React.FC = () => {
       setSaveError(null);
 
       // Get the display name from the user object
-      const displayName = user.email || "Anonymous User";
+      const displayName = user.displayName || user.email || "Anonymous User";
 
       await saveQuizScore(
         user.uid,
@@ -138,13 +139,18 @@ const Quiz: React.FC = () => {
       </div>
     );
   }
-
   if (error || !currentQuestion) {
     return (
-      <div className="flex flex-col items-center justify-center p-4">
-        <div className="text-xl text-red-600 font-semibold">
+      <div className="flex flex-col items-center justify-center p-4 min-h-screen">
+        <div className="text-xl text-red-600 font-semibold mb-4">
           {error || "No active quiz found or no questions available."}
         </div>
+        <a
+          href="/pages/profile"
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700"
+        >
+          Go Back
+        </a>
       </div>
     );
   }

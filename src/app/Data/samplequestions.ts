@@ -21,7 +21,7 @@ export function useFetchQuestions() {
         );
 
         if (quizSnapshot.empty) {
-          setError("No active quiz found.");
+          setError("No quiz has been uploaded yet.");
           setLoading(false);
           return;
         }

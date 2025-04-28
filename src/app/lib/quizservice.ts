@@ -14,7 +14,7 @@ import { db } from "./firebase";
 // Save quiz score to Firestore
 export const saveQuizScore = async (
   userId: string,
-  userDisplayName: string, // Add this parameter
+  userDisplayName: string,
   quizTitle: string,
   score: number,
   totalQuestions: number,
