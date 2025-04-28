@@ -235,7 +235,7 @@ const AdminHeader = () => {
         }`}
       >
         <div className="flex justify-between items-center p-4 border-b border-gray-700">
-          <h2 className="text-xl font-bold">Admin Dashboard</h2>
+          <h2 className="text-xl font-bold">Admin Panel</h2>
           <button onClick={() => setSidebarOpen(false)} className="text-white">
             <FaTimes />
           </button>
