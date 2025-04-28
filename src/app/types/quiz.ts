@@ -83,3 +83,23 @@ export interface QuizConfig {
   shuffleAnswers: boolean;
   passingScore: number;
 }
+
+export interface ScoreBannerProps {
+  score: number;
+  totalQuestions: number;
+  currentQuestionIndex: number;
+}
+
+export interface UserQuizResult {
+  questionId: string;
+  answerId: string;
+  isCorrect: boolean;
+}
+
+export interface QuizState {
+  currentQuestionIndex: number;
+  score: number;
+  isAnswerCorrect: null | boolean;
+  isQuizCompleted: boolean;
+  userAnswers: UserQuizResult[];
+}

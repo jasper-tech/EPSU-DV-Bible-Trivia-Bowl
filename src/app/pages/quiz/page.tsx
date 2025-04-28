@@ -7,9 +7,11 @@ import ScoreBanner from "../../components/scorebanner";
 import AnswerBox from "../../components/answerbox";
 import Timer from "../../components/timer";
 import QuestionCard from "../../components/questioncard";
-
+import { useAuth } from "@/app/context/AuthContext";
+import { saveQuizScore } from "@/app/lib/quizservice";
 const Quiz: React.FC = () => {
   const { questions, loading, error, activeQuizTitle } = useFetchQuestions();
+  const { user } = useAuth();
 
   const [quizState, setQuizState] = useState<QuizState>({
     currentQuestionIndex: 0,
@@ -22,6 +24,8 @@ const Quiz: React.FC = () => {
   const [timeRemaining, setTimeRemaining] = useState<number>(45);
   const [isTimerActive, setIsTimerActive] = useState<boolean>(true);
   const [showScore, setShowScore] = useState<boolean>(false);
+  const [isSavingScore, setIsSavingScore] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const currentQuestion =
     questions.length > 0
@@ -31,6 +35,7 @@ const Quiz: React.FC = () => {
   useEffect(() => {
     if (quizState.isQuizCompleted) {
       setShowScore(true);
+      saveScoreToFirestore();
     }
   }, [quizState.isQuizCompleted]);
 
@@ -38,6 +43,37 @@ const Quiz: React.FC = () => {
     setTimeRemaining(45);
     setIsTimerActive(true);
   }, [quizState.currentQuestionIndex]);
+
+  const saveScoreToFirestore = async () => {
+    if (!user || !activeQuizTitle) {
+      setSaveError("User not logged in or quiz title missing");
+      return;
+    }
+
+    try {
+      setIsSavingScore(true);
+      setSaveError(null);
+
+      // Get the display name from the user object
+      const displayName = user.email || "Anonymous User";
+
+      await saveQuizScore(
+        user.uid,
+        displayName,
+        activeQuizTitle,
+        quizState.score,
+        questions.length,
+        quizState.userAnswers
+      );
+
+      console.log("Score saved successfully");
+    } catch (error) {
+      console.error("Error saving score:", error);
+      setSaveError("Failed to save your score. Please try again.");
+    } finally {
+      setIsSavingScore(false);
+    }
+  };
 
   const handleSubmitAnswer = (userAnswer: Answer) => {
     if (!currentQuestion) return;
@@ -170,6 +206,28 @@ const Quiz: React.FC = () => {
           <div className="text-xl">
             You scored {quizState.score} out of {questions.length}!
           </div>
+
+          {isSavingScore && (
+            <p className="text-gray-600">Saving your score...</p>
+          )}
+          {saveError && <p className="text-red-500">{saveError}</p>}
+
+          {user ? (
+            <p className="text-green-600">
+              Your score has been recorded for the leaderboard!
+            </p>
+          ) : (
+            <p className="text-yellow-600">
+              Log in to save your scores and appear on the leaderboard!
+            </p>
+          )}
+
+          <button
+            onClick={() => (window.location.href = "/pages/leaderboard")}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-md transition duration-200 mt-4"
+          >
+            View Leaderboard
+          </button>
         </div>
       )}
     </div>

@@ -34,7 +34,7 @@ export function useFetchQuestions() {
         setActiveQuizTitle(quizTitle);
         setQuestions(
           quizQuestions.map((q: any) => ({
-            id: q.questionId, // or use `q.id` if available
+            id: q.questionId,
             ...q,
           }))
         );
