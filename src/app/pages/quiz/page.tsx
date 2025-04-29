@@ -57,7 +57,7 @@ const Quiz: React.FC = () => {
       setIsSavingScore(true);
       setSaveError(null);
 
-      const displayName = user.displayName || user.email || "Anonymous User";
+      const displayName = user.email || "Anonymous User";
 
       // Save score with all required information
       await saveQuizScore(
