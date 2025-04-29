@@ -10,6 +10,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { db } from "./firebase";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Save quiz score to Firestore
 export const saveQuizScore = async (
