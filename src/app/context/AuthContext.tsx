@@ -44,12 +44,10 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
 });
 
-// Props for the provider component
 type AuthProviderProps = {
   children: ReactNode;
 };
 
-// Create the provider component
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -110,7 +108,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setLoading(true);
 
     try {
-      const toastId = toast.loading("Signing in...");
+      const toastId = toast.loading("Signing you in...");
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
@@ -134,7 +132,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         setIsAdmin(role === "admin");
 
-        toast.success("Login successful!", { id: toastId });
+        toast.success("Sign in successful!", { id: toastId });
 
         // Redirect based on role
         if (role === "admin") {
@@ -147,7 +145,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setError("User data not found");
       }
     } catch (err: unknown) {
-      let errorMessage = "Login failed.";
+      let errorMessage = "SignIn failed.";
       if (err instanceof Error) {
         errorMessage = err.message;
       }

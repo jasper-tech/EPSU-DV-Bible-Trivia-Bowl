@@ -114,7 +114,6 @@ const Quiz: React.FC = () => {
     }));
   };
 
-  // Handle navigation to next question or complete quiz
   const handleNextQuestion = () => {
     const nextIndex = quizState.currentQuestionIndex + 1;
 

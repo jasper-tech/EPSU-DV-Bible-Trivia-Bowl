@@ -12,10 +12,30 @@ import {
 import clsx from "clsx";
 
 const tiles = [
-  { label: "Add Question", href: "/pages/admin/add-question" },
-  { label: "Manage Users", href: "/pages/admin/manage-users" },
-  { label: "Create Quiz", href: "/pages/admin/create-quiz" },
-  { label: "Upload Quiz", href: "/pages/admin/upload-quiz" },
+  {
+    label: "Add Question",
+    href: "/pages/admin/add-question",
+    icon: AddCircle,
+    color: "text-blue-500 hover:text-blue-700",
+  },
+  {
+    label: "Manage Users",
+    href: "/pages/admin/manage-users",
+    icon: People,
+    color: "text-purple-500 hover:text-purple-700",
+  },
+  {
+    label: "Create Quiz",
+    href: "/pages/admin/create-quiz",
+    icon: Quiz,
+    color: "text-emerald-500 hover:text-emerald-700",
+  },
+  {
+    label: "Upload Quiz",
+    href: "/pages/admin/upload-quiz",
+    icon: UploadFileOutlined,
+    color: "text-amber-500 hover:text-amber-700",
+  },
 ];
 
 const AdminPage = () => {
@@ -23,68 +43,39 @@ const AdminPage = () => {
   const pathname = usePathname();
 
   return (
-    <Box className="grid grid-cols-1 sm:grid-cols-3 gap-6 p-10 justify-items-center">
-      {tiles.map((tile) => (
-        <Box
-          key={tile.href}
-          onClick={() => router.push(tile.href)}
-          className={clsx(
-            "relative w-64 h-40 rounded-xl shadow-md flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-105",
-            pathname === tile.href
-              ? "bg-blue-600 text-white"
-              : "bg-white text-gray-800"
-          )}
-        >
-          <Typography variant="h6" className="font-semibold">
-            {tile.label}
-          </Typography>
+    <Box className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 p-4 md:p-10 justify-items-center">
+      {tiles.map((tile) => {
+        const IconComponent = tile.icon;
 
-          {/* Icon Mapping */}
-          {tile.label === "Add Question" && (
-            <AddCircle
+        return (
+          <Box
+            key={tile.href}
+            onClick={() => router.push(tile.href)}
+            className={clsx(
+              "relative w-full max-w-xs h-40 rounded-xl shadow-md flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-105",
+              pathname === tile.href
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-800"
+            )}
+          >
+            <Typography variant="h6" className="font-semibold">
+              {tile.label}
+            </Typography>
+
+            <IconComponent
               onClick={(e) => {
                 e.stopPropagation();
                 router.push(tile.href);
               }}
-              className="absolute bottom-3 right-3 text-blue-500 hover:text-blue-700"
+              className={clsx(
+                "absolute bottom-3 right-3",
+                pathname === tile.href ? "text-white" : tile.color
+              )}
               fontSize="large"
             />
-          )}
-
-          {tile.label === "Manage Users" && (
-            <People
-              onClick={(e) => {
-                e.stopPropagation();
-                router.push(tile.href);
-              }}
-              className="absolute bottom-3 right-3 text-blue-500 hover:text-blue-700"
-              fontSize="large"
-            />
-          )}
-
-          {tile.label === "Create Quiz" && (
-            <Quiz
-              onClick={(e) => {
-                e.stopPropagation();
-                router.push(tile.href);
-              }}
-              className="absolute bottom-3 right-3 text-blue-500 hover:text-blue-700"
-              fontSize="large"
-            />
-          )}
-
-          {tile.label === "Upload Quiz" && (
-            <UploadFileOutlined
-              onClick={(e) => {
-                e.stopPropagation();
-                router.push(tile.href);
-              }}
-              className="absolute bottom-3 right-3 text-blue-500 hover:text-blue-700"
-              fontSize="large"
-            />
-          )}
-        </Box>
-      ))}
+          </Box>
+        );
+      })}
     </Box>
   );
 };
