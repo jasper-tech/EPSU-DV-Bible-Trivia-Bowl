@@ -1,4 +1,5 @@
-// Represents a single answer option
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export interface Answer {
   id: string;
   text: string;

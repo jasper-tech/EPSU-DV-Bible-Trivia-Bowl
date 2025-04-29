@@ -33,9 +33,7 @@ export default function Dashboard() {
           <h3 className="text-xl font-semibold text-green-700 mb-2">
             Achievements
           </h3>
-          <p className="text-green-600">
-            🏆 Nothing yet... Take some quizzes to earn achievements!
-          </p>
+          <p className="text-green-600">View your achievements!</p>
         </div>
       </div>
     </section>

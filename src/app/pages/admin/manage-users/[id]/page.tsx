@@ -71,7 +71,7 @@ const EditUser = () => {
   };
 
   const handleSaveChanges = async () => {
-    if (!formData.name || !formData.email || !formData.role) {
+    if (!formData.name || !formData.email) {
       toast.error("Please fill in all required fields.");
       return;
     }

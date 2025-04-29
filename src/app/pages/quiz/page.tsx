@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect } from "react";
 import { Answer, QuizState } from "../../types/quiz";
@@ -29,15 +30,15 @@ const Quiz: React.FC = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const currentQuestion =
-    questions.length > 0
-      ? questions[quizState.currentQuestionIndex]
-      : undefined;
+    questions.length > 0 ? questions[quizState.currentQuestionIndex] : null;
 
+  // Handle quiz completion
   useEffect(() => {
     if (quizState.isQuizCompleted) {
       setShowScore(true);
       saveScoreToFirestore();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizState.isQuizCompleted]);
 
   useEffect(() => {
@@ -45,6 +46,7 @@ const Quiz: React.FC = () => {
     setIsTimerActive(true);
   }, [quizState.currentQuestionIndex]);
 
+  // Save quiz results to Firestore database
   const saveScoreToFirestore = async () => {
     if (!user || !activeQuizTitle) {
       setSaveError("User not logged in or quiz title missing");
@@ -55,9 +57,9 @@ const Quiz: React.FC = () => {
       setIsSavingScore(true);
       setSaveError(null);
 
-      // Get the display name from the user object
       const displayName = user.displayName || user.email || "Anonymous User";
 
+      // Save score with all required information
       await saveQuizScore(
         user.uid,
         displayName,
@@ -66,8 +68,6 @@ const Quiz: React.FC = () => {
         questions.length,
         quizState.userAnswers
       );
-
-      console.log("Score saved successfully");
     } catch (error) {
       console.error("Error saving score:", error);
       setSaveError("Failed to save your score. Please try again.");
@@ -80,14 +80,22 @@ const Quiz: React.FC = () => {
     if (!currentQuestion) return;
     setIsTimerActive(false);
 
-    const correctAnswer = currentQuestion.answers.find(
-      (a) => a.id === currentQuestion.correctAnswerId
-    );
+    // Determine if answer is correct based on question type
+    const isCorrect =
+      currentQuestion.questionType === "multiple-choice"
+        ? // For multiple-choice, directly compare IDs
+          userAnswer.id === currentQuestion.correctAnswerId
+        : // For text input, normalize and compare text
+          (() => {
+            const correctAnswer = currentQuestion.answers.find(
+              (a) => a.id === currentQuestion.correctAnswerId
+            );
+            const normalizedCorrect = correctAnswer?.text.trim().toLowerCase();
+            const normalizedUserInput = userAnswer.text.trim().toLowerCase();
+            return normalizedUserInput === normalizedCorrect;
+          })();
 
-    const normalizedCorrect = correctAnswer?.text.trim().toLowerCase();
-    const normalizedUserInput = userAnswer.text.trim().toLowerCase();
-    const isCorrect = normalizedUserInput === normalizedCorrect;
-
+    // Update quiz state with the user's answer and score
     setQuizState((prev) => ({
       ...prev,
       isAnswerCorrect: isCorrect,
@@ -96,28 +104,33 @@ const Quiz: React.FC = () => {
         ...prev.userAnswers,
         {
           questionId: currentQuestion.id,
-          answerId: userAnswer.text,
+          answerId:
+            currentQuestion.questionType === "multiple-choice"
+              ? userAnswer.id
+              : userAnswer.text,
           isCorrect,
         },
       ],
     }));
   };
 
+  // Handle navigation to next question or complete quiz
   const handleNextQuestion = () => {
     const nextIndex = quizState.currentQuestionIndex + 1;
-    if (nextIndex >= questions.length) {
-      setQuizState((prev) => ({ ...prev, isQuizCompleted: true }));
-    } else {
-      setQuizState((prev) => ({
-        ...prev,
-        currentQuestionIndex: nextIndex,
-        isAnswerCorrect: null,
-      }));
-    }
+
+    setQuizState((prev) => ({
+      ...prev,
+      // If we've reached the end, mark quiz as completed
+      ...(nextIndex >= questions.length
+        ? { isQuizCompleted: true }
+        : { currentQuestionIndex: nextIndex, isAnswerCorrect: null }),
+    }));
   };
 
+  // Handle when timer runs out for a question
   const handleTimeUp = () => {
     if (!currentQuestion) return;
+
     setQuizState((prev) => ({
       ...prev,
       isAnswerCorrect: false,
@@ -139,6 +152,7 @@ const Quiz: React.FC = () => {
       </div>
     );
   }
+
   if (error || !currentQuestion) {
     return (
       <div className="flex flex-col items-center justify-center p-4 min-h-screen">
@@ -164,6 +178,7 @@ const Quiz: React.FC = () => {
       )}
 
       {!showScore ? (
+        // Quiz in progress view
         <>
           <ScoreBanner
             score={quizState.score}
@@ -207,17 +222,20 @@ const Quiz: React.FC = () => {
           )}
         </>
       ) : (
+        // Results view
         <div className="flex flex-col items-center space-y-4">
           <div className="text-2xl font-semibold">Quiz Completed!</div>
           <div className="text-xl">
             You scored {quizState.score} out of {questions.length}!
           </div>
 
+          {/* Score saving status */}
           {isSavingScore && (
             <p className="text-gray-600">Saving your score...</p>
           )}
           {saveError && <p className="text-red-500">{saveError}</p>}
 
+          {/* User feedback based on auth status */}
           {user ? (
             <p className="text-green-600">
               Your score has been recorded for the leaderboard!

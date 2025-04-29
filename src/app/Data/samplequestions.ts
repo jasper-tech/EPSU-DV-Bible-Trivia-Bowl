@@ -1,9 +1,10 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { Question } from "../types/quiz";
+import { Question, Quiz } from "../types/quiz";
 import toast from "react-hot-toast";
 
 export function useFetchQuestions() {
@@ -15,7 +16,6 @@ export function useFetchQuestions() {
   useEffect(() => {
     const fetchActiveQuiz = async () => {
       try {
-        // Get the active quiz document (where activeQuiz === 1)
         const quizSnapshot = await getDocs(
           query(collection(db, "quizzes"), where("activeQuiz", "==", 1))
         );
@@ -27,17 +27,45 @@ export function useFetchQuestions() {
         }
 
         const activeQuizDoc = quizSnapshot.docs[0];
-        const data = activeQuizDoc.data();
+        const data = activeQuizDoc.data() as Quiz;
         const quizTitle = data.quizTitle || "Untitled Quiz";
         const quizQuestions = data.questions || [];
 
         setActiveQuizTitle(quizTitle);
-        setQuestions(
-          quizQuestions.map((q: any) => ({
+
+        const processedQuestions = quizQuestions.map((q: any) => {
+          let processedAnswers = Array.isArray(q.answers) ? q.answers : [];
+
+          // Ensure each answer has required properties
+          processedAnswers = processedAnswers.map(
+            (answer: any, index: number) => ({
+              id: answer.id || `answer_${index}`,
+              text: answer.text || "",
+            })
+          );
+
+          const questionType =
+            processedAnswers.length > 1 ? "multiple-choice" : "text";
+
+          if (questionType === "multiple-choice" && !q.correctAnswerId) {
+            console.warn(
+              `Question ${q.questionId} is multiple-choice but has no correctAnswerId`
+            );
+          }
+
+          return {
             id: q.questionId,
-            ...q,
-          }))
-        );
+            text: q.text || "",
+            questionType,
+            answers: processedAnswers,
+            correctAnswerId: q.correctAnswerId || "",
+            explanation: q.explanation,
+            image: q.image,
+            context: q.context,
+          };
+        });
+
+        setQuestions(processedQuestions);
       } catch (err) {
         console.error("Failed to fetch questions:", err);
         toast.error("Error fetching quiz questions.");
