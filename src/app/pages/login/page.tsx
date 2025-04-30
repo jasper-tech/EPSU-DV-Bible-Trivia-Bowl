@@ -4,7 +4,11 @@ import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
+import EmailIcon from "@mui/icons-material/Email";
+import LockIcon from "@mui/icons-material/Lock";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -26,30 +30,15 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-blue-200">
       {/* Left side with illustration for larger screens */}
-      <div className="hidden lg:flex lg:w-1/2 bg-blue-400 justify-center items-center p-12">
+      <div className="hidden lg:flex lg:w-1/2 bg-blue-600 justify-center items-center p-12">
         <div className="text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
             Bible Trivia Bowl
           </h1>
-          <p className="text-xl text-blue-100 mb-8">
-            Welcome back! Continue your biblical knowledge journey.
-          </p>
+
           <div className="w-full max-w-md mx-auto bg-white/10 p-8 rounded-lg shadow-lg">
             <div className="flex justify-center mb-6">
-              <svg
-                className="w-32 h-32 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                />
-              </svg>
+              <MenuBookIcon style={{ fontSize: 128, color: "white" }} />
             </div>
             <p className="text-blue-100 text-lg">
               Test your knowledge, challenge friends, and explore the Bible in a
@@ -63,9 +52,9 @@ export default function LoginPage() {
       <div className="w-full lg:w-1/2 flex justify-center items-center p-4 md:p-8">
         <div className="bg-white rounded-xl shadow-xl p-6 md:p-10 w-full max-w-md">
           <div className="lg:hidden text-center mb-8">
-            <h1 className="text-xl font-bold text-gray-700">
-              Bible Trivia Bowl
-            </h1>
+            <div className="flex justify-center mb-3">
+              <MenuBookIcon style={{ fontSize: 64, color: "#2563EB" }} />
+            </div>
             <p className="text-gray-600 text-sm mt-2">Welcome back!</p>
           </div>
 
@@ -77,7 +66,7 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <Mail size={20} className="text-gray-400" />
+                <EmailIcon style={{ fontSize: 20, color: "#9CA3AF" }} />
               </div>
               <input
                 id="email"
@@ -92,7 +81,7 @@ export default function LoginPage() {
 
             <div className="relative">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <Lock size={20} className="text-gray-400" />
+                <LockIcon style={{ fontSize: 20, color: "#9CA3AF" }} />
               </div>
               <input
                 id="password"
@@ -109,14 +98,14 @@ export default function LoginPage() {
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? (
-                  <EyeOff
-                    size={20}
-                    className="text-gray-400 hover:text-gray-600"
+                  <VisibilityOffIcon
+                    style={{ fontSize: 20, color: "#9CA3AF" }}
+                    className="hover:text-gray-600"
                   />
                 ) : (
-                  <Eye
-                    size={20}
-                    className="text-gray-400 hover:text-gray-600"
+                  <VisibilityIcon
+                    style={{ fontSize: 20, color: "#9CA3AF" }}
+                    className="hover:text-gray-600"
                   />
                 )}
               </button>
