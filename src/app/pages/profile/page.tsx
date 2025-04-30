@@ -9,6 +9,7 @@ import Header from "@/app/components/header";
 import Dashboard from "@/app/components/dashboard";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
+import GitHubIcon from "@mui/icons-material/GitHub";
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
@@ -48,23 +49,46 @@ export default function ProfilePage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
+    <div className="flex flex-col min-h-screen bg-gray-100">
       <Header username={username} />
 
-      {loading ? (
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          height="60vh"
-        >
-          <CircularProgress color="primary" />
-        </Box>
-      ) : (
-        <main>
-          <Dashboard />
-        </main>
-      )}
+      <div className="flex-grow p-6">
+        {loading ? (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            height="60vh"
+          >
+            <CircularProgress color="primary" />
+          </Box>
+        ) : (
+          <main>
+            <Dashboard />
+          </main>
+        )}
+      </div>
+
+      <footer className="bg-white border-t border-gray-200 py-4 w-full mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-center md:justify-between text-gray-600 text-sm">
+            <div className="flex items-center mb-2 md:mb-0">
+              <a
+                href="https://github.com/Jasper-tech"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center hover:text-blue-600 transition-colors"
+                title="Jasper-tech on GitHub"
+              >
+                <GitHubIcon size={22} />
+                <span className="ml-2">Jasper-tech</span>
+              </a>
+            </div>
+            <div className="font-semibold">Bible-Trivia-App</div>
+            <div>© {new Date().getFullYear()} All rights reserved</div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

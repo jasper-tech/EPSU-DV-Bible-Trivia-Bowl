@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -9,12 +9,20 @@ import EmailIcon from "@mui/icons-material/Email";
 import LockIcon from "@mui/icons-material/Lock";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import LoadingScreen from "@/app/components/loadingscreen";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { login, error, loading } = useAuth();
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const { login, error, loading, user } = useAuth();
+
+  useEffect(() => {
+    if (user && isNavigating) {
+    }
+  }, [user, isNavigating]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,8 +32,13 @@ export default function LoginPage() {
       return;
     }
 
+    setIsNavigating(true);
     await login(email, password);
   };
+
+  if (isNavigating && user) {
+    return <LoadingScreen message="Please wait..." />;
+  }
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-blue-200">
@@ -145,9 +158,13 @@ export default function LoginPage() {
             <button
               type="submit"
               className="bg-blue-600 hover:bg-blue-700 text-white w-full py-4 rounded-lg font-medium transition-colors duration-300 shadow-md hover:shadow-lg disabled:opacity-70"
-              disabled={loading}
+              disabled={loading || isNavigating}
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading
+                ? "Signing in..."
+                : isNavigating
+                ? "Redirecting..."
+                : "Sign In"}
             </button>
 
             <div className="text-center pt-4">

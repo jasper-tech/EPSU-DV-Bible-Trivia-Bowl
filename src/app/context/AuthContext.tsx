@@ -17,14 +17,12 @@ import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-// Define user type with role
 type UserData = {
   uid: string;
   email: string | null;
   role: string;
 };
 
-// Define the shape of our auth context
 type AuthContextType = {
   user: UserData | null;
   loading: boolean;
@@ -32,9 +30,9 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isAdmin: boolean;
+  isNavigating: boolean;
 };
 
-// Create the context with default values
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
@@ -42,6 +40,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   logout: async () => {},
   isAdmin: false,
+  isNavigating: false,
 });
 
 type AuthProviderProps = {
@@ -53,6 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
 
   // Handle user authentication state changes
@@ -106,6 +106,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (email: string, password: string) => {
     setError(null);
     setLoading(true);
+    setIsNavigating(true);
 
     try {
       const toastId = toast.loading("Signing you in...");
@@ -134,15 +135,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         toast.success("Sign in successful!", { id: toastId });
 
-        // Redirect based on role
-        if (role === "admin") {
-          router.push("/pages/admin");
-        } else {
-          router.push("/pages/profile");
-        }
+        // Delay navigation slightly to ensure loading screen shows
+        setTimeout(() => {
+          // Redirect based on role
+          if (role === "admin") {
+            router.push("/pages/admin");
+          } else {
+            router.push("/pages/profile");
+          }
+        }, 500);
       } else {
         toast.error("User data not found.", { id: toastId });
         setError("User data not found");
+        setIsNavigating(false);
       }
     } catch (err: unknown) {
       let errorMessage = "SignIn failed.";
@@ -152,6 +157,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       toast.error(errorMessage);
       setError(errorMessage);
+      setIsNavigating(false);
     } finally {
       setLoading(false);
     }
@@ -160,6 +166,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Logout function
   const logout = async () => {
     try {
+      setIsNavigating(true);
       const toastId = toast.loading("Signing out...");
       await firebaseSignOut(auth);
       setUser(null);
@@ -173,8 +180,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       toast.error(errorMessage);
       setError(errorMessage);
+      setIsNavigating(false);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      setIsNavigating(false);
+    };
+  }, []);
 
   const value = {
     user,
@@ -183,12 +197,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     logout,
     isAdmin,
+    isNavigating,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// Custom hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

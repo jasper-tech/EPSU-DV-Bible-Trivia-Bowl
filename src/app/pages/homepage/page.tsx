@@ -14,6 +14,7 @@ import EmailIcon from "@mui/icons-material/Email";
 import LockIcon from "@mui/icons-material/Lock";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import LoadingScreen from "@/app/components/loadingscreen";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -22,6 +23,8 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [accountExists, setAccountExists] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+
   const router = useRouter();
 
   const isFirebaseError = (err: unknown): err is FirebaseError => {
@@ -55,6 +58,7 @@ export default function SignupPage() {
       });
 
       toast.success("Signup successful! 🎉", { id: toastId });
+      setIsNavigating(true);
       router.push("/pages/profile");
     } catch (err: unknown) {
       toast.dismiss(toastId);
@@ -72,6 +76,9 @@ export default function SignupPage() {
       setIsSubmitting(false);
     }
   };
+  if (isNavigating) {
+    return <LoadingScreen message="Taking you to your profile..." />;
+  }
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-blue-200">
@@ -97,7 +104,6 @@ export default function SignupPage() {
       <div className="w-full lg:w-1/2 flex justify-center items-center p-4 md:p-8">
         <div className="bg-white rounded-xl shadow-xl p-6 md:p-10 w-full max-w-md">
           <div className="lg:hidden text-center mb-8">
-            {/* Replaced text heading with MUI Bible icon for smaller screens */}
             <div className="flex justify-center mb-3">
               <MenuBookIcon style={{ fontSize: 64, color: "#2563EB" }} />
             </div>
