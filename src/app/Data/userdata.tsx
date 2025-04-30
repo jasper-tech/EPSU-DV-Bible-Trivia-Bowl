@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useEffect, useState } from "react";
 import {
   collection,
@@ -8,6 +10,7 @@ import {
   doc,
   deleteDoc,
 } from "firebase/firestore";
+
 import { db } from "../lib/firebase";
 import { useRouter } from "next/navigation";
 import DeleteConfirmDialog from "../components/deleteconfirmdialog";

@@ -19,7 +19,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 const EditUser = () => {
   const params = useParams();
   const router = useRouter();
-  const id = params.id; // Get the user ID from the URL
+  const id = params.id;
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -49,7 +49,7 @@ const EditUser = () => {
         });
       } else {
         toast.error("User not found");
-        router.push("/pages/admin/manage-users"); // Redirect back if user not found
+        router.push("/pages/admin/manage-users");
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
