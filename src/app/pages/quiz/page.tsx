@@ -1,5 +1,5 @@
 "use client";
-
+import { Box, Typography, Paper, CircularProgress, Alert } from "@mui/material";
 import React, { useState, useEffect } from "react";
 import { Answer, QuizState } from "../../types/quiz";
 import { useFetchQuestions } from "../../Data/samplequestions";
@@ -221,27 +221,51 @@ const Quiz: React.FC = () => {
         </>
       ) : (
         // Results view
-        <div className="flex flex-col items-center space-y-4">
-          <div className="text-2xl font-semibold">Quiz Completed!</div>
-          <div className="text-xl">
-            You scored {quizState.score} out of {questions.length}!
-          </div>
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          gap={2}
+          sx={{ mt: 4, p: 2 }}
+        >
+          <Typography variant="h4" fontWeight="bold" gutterBottom>
+            Quiz Completed!
+          </Typography>
+
+          <Paper
+            elevation={3}
+            sx={{ p: 3, textAlign: "center", width: "100%", maxWidth: 400 }}
+          >
+            <Typography variant="h5" gutterBottom>
+              You scored {quizState.score} out of {questions.length}!
+            </Typography>
+          </Paper>
 
           {/* Score saving status */}
           {isSavingScore && (
-            <p className="text-gray-600">Saving your score...</p>
+            <Box display="flex" alignItems="center" gap={1}>
+              <CircularProgress size={20} />
+              <Typography variant="body1" color="textSecondary">
+                Saving your score...
+              </Typography>
+            </Box>
           )}
-          {saveError && <p className="text-red-500">{saveError}</p>}
+
+          {saveError && (
+            <Alert severity="error" sx={{ width: "100%", maxWidth: 400 }}>
+              {saveError}
+            </Alert>
+          )}
 
           {/* User feedback based on auth status */}
           {user ? (
-            <p className="text-green-600">
+            <Alert severity="success" sx={{ width: "100%", maxWidth: 400 }}>
               Your score has been recorded for the leaderboard!
-            </p>
+            </Alert>
           ) : (
-            <p className="text-yellow-600">
-              Log in to save your scores and appear on the leaderboard!
-            </p>
+            <Alert severity="info" sx={{ width: "100%", maxWidth: 400 }}>
+              Log in to save your score and appear on the leaderboard.
+            </Alert>
           )}
 
           <button
@@ -250,7 +274,7 @@ const Quiz: React.FC = () => {
           >
             View Leaderboard
           </button>
-        </div>
+        </Box>
       )}
     </div>
   );
