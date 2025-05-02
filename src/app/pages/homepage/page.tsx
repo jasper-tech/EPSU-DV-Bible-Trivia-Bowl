@@ -239,7 +239,7 @@ export default function SignupPage() {
                 disabled={isSubmitting}
                 className="bg-blue-600 hover:bg-blue-700 text-white w-full py-4 rounded-lg font-medium transition-colors duration-300 shadow-md hover:shadow-lg disabled:opacity-70"
               >
-                {isSubmitting ? "Sending..." : "Send Verification Email"}
+                {isSubmitting ? "Sending..." : "Get Verification link"}
               </button>
             </div>
           ) : (

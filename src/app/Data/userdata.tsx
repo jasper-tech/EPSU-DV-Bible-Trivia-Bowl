@@ -314,13 +314,13 @@ export const FetchUsers = () => {
             onChange={handleFormChange}
             fullWidth
           />
-          <TextField
+          {/* <TextField
             label="Image URL"
             name="image"
             value={formData.image}
             onChange={handleFormChange}
             fullWidth
-          />
+          /> */}
           <TextField
             label="Role"
             name="role"
