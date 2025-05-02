@@ -27,6 +27,12 @@ const Quiz: React.FC = () => {
   const [showScore, setShowScore] = useState<boolean>(false);
   const [isSavingScore, setIsSavingScore] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Track question response times
+  const [responseTimes, setResponseTimes] = useState<number[]>([]);
+  // Track when the question was first shown to the user
+  const [questionStartTime, setQuestionStartTime] = useState<number>(
+    Date.now()
+  );
 
   const currentQuestion =
     questions.length > 0 ? questions[quizState.currentQuestionIndex] : null;
@@ -43,6 +49,8 @@ const Quiz: React.FC = () => {
   useEffect(() => {
     setTimeRemaining(45);
     setIsTimerActive(true);
+    // Reset the start time when moving to a new question
+    setQuestionStartTime(Date.now());
   }, [quizState.currentQuestionIndex]);
 
   // Save quiz results to Firestore database
@@ -58,14 +66,33 @@ const Quiz: React.FC = () => {
 
       const displayName = user.email || "Anonymous User";
 
-      // Save score with all required information
+      // Calculate average response time (in seconds)
+      const totalResponseTime = responseTimes.reduce(
+        (sum, time) => sum + time,
+        0
+      );
+      const averageResponseTime =
+        responseTimes.length > 0
+          ? (totalResponseTime / responseTimes.length).toFixed(2)
+          : 0;
+
+      // Enhanced userAnswers with response times
+      const enhancedUserAnswers = quizState.userAnswers.map(
+        (answer, index) => ({
+          ...answer,
+          responseTime: responseTimes[index] || 0, // Individual response time per question
+        })
+      );
+
+      // Save score with all required information including response time
       await saveQuizScore(
         user.uid,
         displayName,
         activeQuizTitle,
         quizState.score,
         questions.length,
-        quizState.userAnswers
+        enhancedUserAnswers,
+        parseFloat(averageResponseTime.toString()) // Add average response time
       );
     } catch (error) {
       console.error("Error saving score:", error);
@@ -78,6 +105,11 @@ const Quiz: React.FC = () => {
   const handleSubmitAnswer = (userAnswer: Answer) => {
     if (!currentQuestion) return;
     setIsTimerActive(false);
+
+    // Calculate response time for this question (in seconds)
+    const responseTime = (Date.now() - questionStartTime) / 1000;
+    // Add to the response times array
+    setResponseTimes((prev) => [...prev, responseTime]);
 
     // Determine if answer is correct based on question type
     const isCorrect =
@@ -108,6 +140,7 @@ const Quiz: React.FC = () => {
               ? userAnswer.id
               : userAnswer.text,
           isCorrect,
+          responseTime, // Add response time to user answer
         },
       ],
     }));
@@ -129,6 +162,10 @@ const Quiz: React.FC = () => {
   const handleTimeUp = () => {
     if (!currentQuestion) return;
 
+    // Add the maximum time as the response time when timer runs out
+    const responseTime = 45; // Maximum time allowed
+    setResponseTimes((prev) => [...prev, responseTime]);
+
     setQuizState((prev) => ({
       ...prev,
       isAnswerCorrect: false,
@@ -138,6 +175,7 @@ const Quiz: React.FC = () => {
           questionId: currentQuestion.id,
           answerId: "",
           isCorrect: false,
+          responseTime, // Add the max time as response time
         },
       ],
     }));
@@ -238,6 +276,16 @@ const Quiz: React.FC = () => {
           >
             <Typography variant="h5" gutterBottom>
               You scored {quizState.score} out of {questions.length}!
+            </Typography>
+            <Typography variant="body1" color="textSecondary">
+              Average response time:{" "}
+              {responseTimes.length > 0
+                ? (
+                    responseTimes.reduce((sum, time) => sum + time, 0) /
+                    responseTimes.length
+                  ).toFixed(2)
+                : 0}{" "}
+              seconds
             </Typography>
           </Paper>
 

@@ -14,6 +14,7 @@ interface LeaderboardEntry {
   totalQuestions: number;
   percentage: number;
   timestamp: any;
+  averageResponseTime?: number;
 }
 
 const Leaderboard: React.FC = () => {
@@ -25,6 +26,7 @@ const Leaderboard: React.FC = () => {
   const [quizTitle, setQuizTitle] = useState<string>("");
   const [availableQuizzes, setAvailableQuizzes] = useState<string[]>([]);
   const { user } = useAuth();
+  const [isSpeedRace, setIsSpeedRace] = useState<boolean>(false);
 
   // Fetch available quizzes
   useEffect(() => {
@@ -43,7 +45,12 @@ const Leaderboard: React.FC = () => {
     };
 
     fetchAvailableQuizzes();
-  }, []);
+  }, [quizTitle]);
+
+  // Update isSpeedRace when quizTitle changes
+  useEffect(() => {
+    setIsSpeedRace(quizTitle.includes("- SpeedRace"));
+  }, [quizTitle]);
 
   // Fetch leaderboard data whenever the quiz title changes
   useEffect(() => {
@@ -56,7 +63,36 @@ const Leaderboard: React.FC = () => {
 
         const data = await getQuizLeaderboard(quizTitle, 20);
 
-        setLeaderboardData(data as LeaderboardEntry[]);
+        // Sort data based on quiz type
+        let sortedData = [...data] as LeaderboardEntry[];
+
+        if (isSpeedRace) {
+          // For SpeedRace quizzes, prioritize sorting by score (descending)
+          // then by response time (ascending, faster is better)
+          sortedData.sort((a, b) => {
+            // First compare by score (higher is better)
+            if (b.score !== a.score) {
+              return b.score - a.score;
+            }
+
+            // If scores are equal and both entries have response times
+            if (
+              a.averageResponseTime !== undefined &&
+              b.averageResponseTime !== undefined
+            ) {
+              return a.averageResponseTime - b.averageResponseTime;
+            }
+
+            // If only one has a response time, prioritize the one with a time
+            if (a.averageResponseTime !== undefined) return -1;
+            if (b.averageResponseTime !== undefined) return 1;
+
+            // Finally, fall back to timestamp if needed
+            return a.timestamp.seconds - b.timestamp.seconds;
+          });
+        }
+
+        setLeaderboardData(sortedData);
       } catch (err) {
         console.error("Error fetching leaderboard:", err);
         setError("Failed to load leaderboard data. Please try again.");
@@ -66,7 +102,7 @@ const Leaderboard: React.FC = () => {
     };
 
     fetchLeaderboardData();
-  }, [quizTitle]);
+  }, [quizTitle, isSpeedRace]);
 
   // Function to format the timestamp
   const formatDate = (timestamp: any) => {
@@ -75,6 +111,18 @@ const Leaderboard: React.FC = () => {
     // Firestore timestamp conversion
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+  };
+
+  // Function to format average response time (in seconds)
+  const formatAverageResponseTime = (seconds?: number) => {
+    if (seconds === undefined || seconds === null) return "N/A";
+
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = (seconds % 60).toFixed(1);
+
+    return `${minutes}:${
+      parseFloat(remainingSeconds) < 10 ? "0" : ""
+    }${remainingSeconds}`;
   };
 
   return (
@@ -103,6 +151,15 @@ const Leaderboard: React.FC = () => {
         </select>
       </div>
 
+      {isSpeedRace && (
+        <div className="mb-4 bg-yellow-100 p-3 rounded-md border border-yellow-300">
+          <p className="text-yellow-800 font-medium">
+            This is a Speed Race Quiz! Rankings are determined first by correct
+            answers, then by average response time.
+          </p>
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-8">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
@@ -124,18 +181,23 @@ const Leaderboard: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-100">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                   Rank
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   User
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
                   Score
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Percentage
                 </th>
+                {isSpeedRace && (
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Response Time
+                  </th>
+                )}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
@@ -168,12 +230,17 @@ const Leaderboard: React.FC = () => {
                         entry.userDisplayName || "Anonymous User"
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-700">
                       {entry.score} / {entry.totalQuestions}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {entry.percentage.toFixed(1)}%
                     </td>
+                    {isSpeedRace && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-700">
+                        {formatAverageResponseTime(entry.averageResponseTime)}
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(entry.timestamp)}
                     </td>

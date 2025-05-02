@@ -19,7 +19,8 @@ export const saveQuizScore = async (
   quizTitle: string,
   score: number,
   totalQuestions: number,
-  userAnswers: any[]
+  userAnswers: any[],
+  averageResponseTime?: number
 ) => {
   try {
     const quizResultsRef = collection(db, "quizResults");
@@ -33,6 +34,10 @@ export const saveQuizScore = async (
       percentage: (score / totalQuestions) * 100,
       timestamp: new Date(),
       userAnswers,
+      averageResponseTime: averageResponseTime || null,
+      hasResponseTimes: userAnswers.some(
+        (answer) => answer.responseTime !== undefined
+      ),
     });
 
     return result.id;
