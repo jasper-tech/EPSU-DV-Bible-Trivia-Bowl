@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bible Trivia App",
+  title: "DV Quiz App",
   description: "bible trivia app",
 };
 
