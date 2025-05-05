@@ -42,6 +42,7 @@ const AdminHeader = () => {
   const [quizzesLoading, setQuizzesLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [uploads, setUploads] = useState<string[]>([]);
+  const [filteredUploads, setFilteredUploads] = useState<string[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -131,6 +132,14 @@ const AdminHeader = () => {
           (doc) => doc.data().quizTitle
         );
         setUploads(uploadedQuizzes);
+
+        // Filter uploads based on activeQuiz in quizzes collection
+        const filtered = uploadedQuizzes.filter((uploadTitle) =>
+          quizzes.some(
+            (quiz) => quiz.quizTitle === uploadTitle && quiz.activeQuiz === 1
+          )
+        );
+        setFilteredUploads(filtered);
       },
       (error) => {
         console.error("Error fetching uploads:", error);
@@ -139,8 +148,7 @@ const AdminHeader = () => {
     );
 
     return () => unsubscribe();
-  }, []);
-
+  }, [quizzes]);
   const handleSignOut = async () => {
     try {
       await signOut(auth);
@@ -251,7 +259,7 @@ const AdminHeader = () => {
             onClick={handleUploadsClick}
             className="relative flex items-center text-blue-400 hover:text-blue-600"
           >
-            <Badge badgeContent={uploads.length} color="primary">
+            <Badge badgeContent={filteredUploads.length} color="primary">
               <FaCloudUploadAlt size={20} />
             </Badge>
             <span className="ml-2 text-sm">Uploads</span>
@@ -354,16 +362,16 @@ const AdminHeader = () => {
           }}
         >
           <h2 className="text-lg font-bold mb-4">Uploaded Quizzes</h2>
-          {uploads.length > 0 ? (
+          {filteredUploads.length > 0 ? (
             <ul className="list-disc pl-5">
-              {uploads.map((quizTitle, index) => (
+              {filteredUploads.map((quizTitle, index) => (
                 <li key={index} className="text-gray-700 mb-2">
                   {quizTitle}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-gray-500">No quizzes uploaded yet.</p>
+            <p className="text-gray-500">No active quizzes uploaded yet.</p>
           )}
           <button
             onClick={handleCloseModal}
