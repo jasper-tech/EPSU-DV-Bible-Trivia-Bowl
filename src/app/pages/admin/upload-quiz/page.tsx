@@ -130,7 +130,7 @@ const AdminQuizSelection: React.FC = () => {
 
   const handleUpload = async () => {
     if (!selectedQuiz || !selectedQuiz.id) {
-      toast.error("No quiz selected ");
+      toast.error("No quiz selected");
       return;
     }
 
@@ -157,6 +157,12 @@ const AdminQuizSelection: React.FC = () => {
       // Step 2: Perform all updates
       await Promise.all(batchUpdates);
 
+      // Save the uploaded quiz title to the `uploads` collection
+      await addDoc(collection(db, "uploads"), {
+        quizTitle: selectedQuiz.quizTitle,
+        uploadedAt: new Date(),
+      });
+
       toast.success(`Quiz "${selectedQuiz.quizTitle}" is now active!`);
       console.log("Active quiz updated successfully");
     } catch (err) {
@@ -166,7 +172,6 @@ const AdminQuizSelection: React.FC = () => {
       setIsUploading(false);
     }
   };
-
   return (
     <div className="p-6">
       <button
