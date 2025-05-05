@@ -9,9 +9,10 @@ import {
   FaTimes,
   FaQuestion,
   FaClipboardList,
+  FaCloudUploadAlt,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
-import { CircularProgress, Tabs, Tab, Box } from "@mui/material";
+import { CircularProgress, Tabs, Tab, Box, Badge, Modal } from "@mui/material";
 
 import { auth, db } from "../lib/firebase";
 import {
@@ -40,7 +41,9 @@ const AdminHeader = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [quizzesLoading, setQuizzesLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [uploads, setUploads] = useState<string[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [viewedQuestion, setViewedQuestion] = useState<Question | null>(null);
   const [viewedQuiz, setViewedQuiz] = useState<Quiz | null>(null);
@@ -120,6 +123,24 @@ const AdminHeader = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, "uploads"),
+      (snapshot: QuerySnapshot<DocumentData>) => {
+        const uploadedQuizzes = snapshot.docs.map(
+          (doc) => doc.data().quizTitle
+        );
+        setUploads(uploadedQuizzes);
+      },
+      (error) => {
+        console.error("Error fetching uploads:", error);
+        toast.error("Failed to load uploads.");
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
   const handleSignOut = async () => {
     try {
       await signOut(auth);
@@ -129,6 +150,14 @@ const AdminHeader = () => {
       console.error("Sign out error:", error);
       toast.error("Failed to sign out.");
     }
+  };
+
+  const handleUploadsClick = () => {
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
   };
 
   const confirmDelete = (id: string) => {
@@ -219,6 +248,15 @@ const AdminHeader = () => {
             {loading ? "Loading role..." : `Quizmaster | ${userData?.role}`}
           </p>
           <button
+            onClick={handleUploadsClick}
+            className="relative flex items-center text-blue-400 hover:text-blue-600"
+          >
+            <Badge badgeContent={uploads.length} color="primary">
+              <FaCloudUploadAlt size={20} />
+            </Badge>
+            <span className="ml-2 text-sm">Uploads</span>
+          </button>
+          <button
             onClick={handleSignOut}
             className="flex items-center text-red-400 hover:text-red-600 text-sm"
           >
@@ -302,6 +340,39 @@ const AdminHeader = () => {
           </div>
         </div>
       </div>
+      <Modal open={modalOpen} onClose={handleCloseModal}>
+        <Box
+          className="bg-white rounded-lg shadow-lg p-6"
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 400,
+            maxHeight: "80vh",
+            overflowY: "auto",
+          }}
+        >
+          <h2 className="text-lg font-bold mb-4">Uploaded Quizzes</h2>
+          {uploads.length > 0 ? (
+            <ul className="list-disc pl-5">
+              {uploads.map((quizTitle, index) => (
+                <li key={index} className="text-gray-700 mb-2">
+                  {quizTitle}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500">No quizzes uploaded yet.</p>
+          )}
+          <button
+            onClick={handleCloseModal}
+            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-all duration-200"
+          >
+            Close
+          </button>
+        </Box>
+      </Modal>
 
       {/* Dialogs */}
       <DeleteConfirmDialog

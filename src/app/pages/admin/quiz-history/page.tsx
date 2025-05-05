@@ -20,6 +20,7 @@ import {
   Button,
 } from "@mui/material";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 interface DeleteConfirmDialogProps {
   open: boolean;
@@ -60,12 +61,12 @@ interface QuizResult {
   userId?: string;
   userDisplayName?: string;
   quizTitle?: string;
-  timestamp?: any; // Firestore timestamp can be in different formats
+  timestamp?: any;
   score?: number;
   totalQuestions?: number;
   percentage?: number;
   averageResponseTime?: number;
-  [key: string]: any; // For any additional fields
+  [key: string]: any;
 }
 
 interface CategorizedQuizResults {
@@ -80,6 +81,7 @@ const QuizHistory: FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isClearing, setIsClearing] = useState<boolean>(false);
+  const router = useRouter();
 
   // State for the delete confirmation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
@@ -319,6 +321,12 @@ const QuizHistory: FC = () => {
 
   return (
     <div className="container mx-auto p-4">
+      <button
+        onClick={() => router.back()}
+        className="mb-6 text-blue-600 hover:underline flex items-center"
+      >
+        ← Back
+      </button>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Quiz History</h1>
         <button
