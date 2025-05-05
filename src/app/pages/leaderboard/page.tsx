@@ -2,8 +2,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect } from "react";
-import { getQuizLeaderboard, getAvailableQuizzes } from "@/app/lib/quizservice";
+import { getQuizLeaderboard } from "@/app/lib/quizservice";
 import { useAuth } from "@/app/context/AuthContext";
+import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { db } from "@/app/lib/firebase";
 
 interface LeaderboardEntry {
   id: string;
@@ -24,28 +26,34 @@ const Leaderboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [quizTitle, setQuizTitle] = useState<string>("");
-  const [availableQuizzes, setAvailableQuizzes] = useState<string[]>([]);
   const { user } = useAuth();
   const [isSpeedRace, setIsSpeedRace] = useState<boolean>(false);
 
-  // Fetch available quizzes
   useEffect(() => {
-    const fetchAvailableQuizzes = async () => {
+    const fetchLatestUploadedQuiz = async () => {
       try {
-        const quizzes = await getAvailableQuizzes();
-        setAvailableQuizzes(quizzes);
+        const uploadsQuery = query(
+          collection(db, "uploads"),
+          orderBy("uploadedAt", "desc"),
+          limit(1)
+        );
 
-        // Set the first quiz as default if none selected
-        if (quizzes.length > 0 && !quizTitle) {
-          setQuizTitle(quizzes[0]);
+        const snapshot = await getDocs(uploadsQuery);
+
+        if (!snapshot.empty) {
+          const latestUpload = snapshot.docs[0].data();
+          setQuizTitle(latestUpload.quizTitle);
+        } else {
+          setQuizTitle("No quiz uploaded");
         }
       } catch (err) {
-        console.error("Error fetching available quizzes:", err);
+        console.error("Error fetching latest uploaded quiz:", err);
+        setError("Failed to fetch the latest uploaded quiz.");
       }
     };
 
-    fetchAvailableQuizzes();
-  }, [quizTitle]);
+    fetchLatestUploadedQuiz();
+  }, []);
 
   // Update isSpeedRace when quizTitle changes
   useEffect(() => {
@@ -129,26 +137,14 @@ const Leaderboard: React.FC = () => {
     <div className="w-full max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-bold text-center mb-6">Quiz Leaderboard</h1>
 
-      {/* Quiz selector dropdown */}
+      {/* Quiz selector  */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Select Quiz:
+          Quiz:
         </label>
-        <select
-          value={quizTitle}
-          onChange={(e) => setQuizTitle(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {availableQuizzes.length > 0 ? (
-            availableQuizzes.map((quiz) => (
-              <option key={quiz} value={quiz}>
-                {quiz}
-              </option>
-            ))
-          ) : (
-            <option value="">No quizzes available</option>
-          )}
-        </select>
+        <div className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100">
+          {quizTitle || "No quiz selected"}
+        </div>
       </div>
 
       {isSpeedRace && (

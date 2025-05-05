@@ -8,6 +8,7 @@ import {
   getDocs,
   doc,
   getDoc,
+  addDoc,
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../../../lib/firebase";

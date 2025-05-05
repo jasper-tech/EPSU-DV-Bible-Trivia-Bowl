@@ -11,6 +11,8 @@ import {
   onSnapshot,
   QueryDocumentSnapshot,
   DocumentData,
+  deleteDoc,
+  doc,
 } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -34,6 +36,8 @@ export {
   collection,
   addDoc,
   getDocs,
+  doc,
+  deleteDoc,
   query,
   where,
   Timestamp,

@@ -8,6 +8,7 @@ import {
   People,
   Quiz,
   UploadFileOutlined,
+  History,
 } from "@mui/icons-material";
 import clsx from "clsx";
 
@@ -34,6 +35,12 @@ const tiles = [
     label: "Upload Quiz",
     href: "/pages/admin/upload-quiz",
     icon: UploadFileOutlined,
+    color: "text-amber-500 hover:text-amber-700",
+  },
+  {
+    label: "Quiz History",
+    href: "/pages/admin/quiz-history",
+    icon: History,
     color: "text-amber-500 hover:text-amber-700",
   },
 ];
