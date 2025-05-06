@@ -10,7 +10,25 @@ import {
   ListItem,
   ListItemText,
 } from "@mui/material";
-import { Quiz } from "../types/quiz";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+interface Quiz {
+  id: string;
+  quizTitle: string;
+  questions: {
+    questionId: string;
+    text: string;
+    answers: {
+      id: string;
+      text: string;
+    }[];
+    correctAnswerId: string;
+  }[];
+  createdAt: any;
+  [key: string]: any;
+}
+
 interface ViewQuizDialogProps {
   quiz: Quiz | null;
   onClose: () => void;

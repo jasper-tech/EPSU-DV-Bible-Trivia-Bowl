@@ -21,6 +21,7 @@ import {
 } from "@mui/material";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import ViewQuizDialog from "@/app/components/viewquizdialog";
 
 interface DeleteConfirmDialogProps {
   open: boolean;
@@ -56,31 +57,35 @@ const DeleteConfirmDialog = ({
   );
 };
 
-interface QuizResult {
+// Assuming this matches the Quiz type from your types file
+interface Quiz {
   id: string;
-  userId?: string;
-  userDisplayName?: string;
-  quizTitle?: string;
-  timestamp?: any;
-  score?: number;
-  totalQuestions?: number;
-  percentage?: number;
-  averageResponseTime?: number;
+  quizTitle: string;
+  questions: {
+    questionId: string;
+    text: string;
+    answers: {
+      id: string;
+      text: string;
+    }[];
+    correctAnswerId: string;
+  }[];
+  createdAt: any;
   [key: string]: any;
 }
 
-interface CategorizedQuizResults {
-  [category: string]: QuizResult[];
+interface CategorizedQuizzes {
+  [category: string]: Quiz[];
 }
 
-const QuizHistory: FC = () => {
-  const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
-  const [categorizedResults, setCategorizedResults] =
-    useState<CategorizedQuizResults>({});
+const QuizzesDashboard: FC = () => {
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [categorizedQuizzes, setCategorizedQuizzes] =
+    useState<CategorizedQuizzes>({});
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isClearing, setIsClearing] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const router = useRouter();
 
   // State for the delete confirmation dialog
@@ -90,26 +95,31 @@ const QuizHistory: FC = () => {
     () => Promise<void>
   >(() => async () => {});
 
+  // State for the view quiz dialog
+  const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
+
   useEffect(() => {
-    const fetchQuizResults = async (): Promise<void> => {
+    const fetchQuizzes = async (): Promise<void> => {
       try {
-        // Get quiz results from Firestore
-        const quizResultsCollection = collection(db, "quizResults");
-        const quizResultsSnapshot = await getDocs(quizResultsCollection);
+        // Get quizzes from Firestore
+        const quizzesCollection = collection(db, "quizzes");
+        const quizzesSnapshot = await getDocs(quizzesCollection);
 
-        const results: QuizResult[] = [];
-        quizResultsSnapshot.forEach(
-          (doc: QueryDocumentSnapshot<DocumentData>) => {
-            results.push({
-              id: doc.id,
-              ...doc.data(),
-            });
-          }
-        );
+        const results: Quiz[] = [];
+        quizzesSnapshot.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
+          const data = doc.data();
+          results.push({
+            id: doc.id,
+            quizTitle: data.quizTitle || "Untitled Quiz",
+            questions: data.questions || [],
+            createdAt: data.createdAt,
+            ...data,
+          });
+        });
 
-        // Sort results by timestamp (newest first)
-        results.sort((a: QuizResult, b: QuizResult) => {
-          if (!a.timestamp || !b.timestamp) return 0;
+        // Sort quizzes by creation timestamp (newest first)
+        results.sort((a: Quiz, b: Quiz) => {
+          if (!a.createdAt || !b.createdAt) return 0;
 
           // Handle Firestore Timestamp objects
           const getTime = (timestamp: any): number => {
@@ -141,126 +151,227 @@ const QuizHistory: FC = () => {
             return 0;
           };
 
-          return getTime(b.timestamp) - getTime(a.timestamp);
+          return getTime(b.createdAt) - getTime(a.createdAt);
         });
 
-        setQuizResults(results);
+        setQuizzes(results);
 
-        // Categorize results by quiz title
-        const categorized: CategorizedQuizResults = {
+        // Categorize quizzes by creation month
+        const categorized: CategorizedQuizzes = {
           All: results,
         };
 
-        results.forEach((result: QuizResult) => {
-          const category = result.quizTitle || "Untitled Quiz";
-          if (!categorized[category]) {
-            categorized[category] = [];
+        // Group by month
+        results.forEach((quiz: Quiz) => {
+          let dateStr = "Unknown Date";
+
+          if (quiz.createdAt) {
+            const date = quiz.createdAt.toDate
+              ? quiz.createdAt.toDate()
+              : new Date(
+                  typeof quiz.createdAt === "number"
+                    ? quiz.createdAt < 10000000000
+                      ? quiz.createdAt * 1000
+                      : quiz.createdAt
+                    : quiz.createdAt
+                );
+
+            dateStr = date.toLocaleString("default", {
+              month: "long",
+              year: "numeric",
+            });
           }
-          categorized[category].push(result);
+
+          if (!categorized[dateStr]) {
+            categorized[dateStr] = [];
+          }
+          categorized[dateStr].push(quiz);
         });
 
-        setCategorizedResults(categorized);
+        setCategorizedQuizzes(categorized);
         setLoading(false);
       } catch (err) {
-        console.error("Error fetching quiz results:", err);
-        setError("Failed to load quiz results. Please try again later.");
+        console.error("Error fetching quizzes:", err);
+        setError("Failed to load quizzes. Please try again later.");
         setLoading(false);
       }
     };
 
-    fetchQuizResults();
+    fetchQuizzes();
   }, []);
 
-  const clearAllQuizResults = async (): Promise<void> => {
+  const deleteQuiz = async (quizId: string): Promise<void> => {
     try {
-      setIsClearing(true);
+      setIsDeleting(true);
+      await deleteDoc(doc(db, "quizzes", quizId));
 
-      // Get all quiz results
-      const quizResultsCollection = collection(db, "quizResults");
-      const quizResultsSnapshot = await getDocs(quizResultsCollection);
+      // Update local state
+      const updatedQuizzes = quizzes.filter((quiz) => quiz.id !== quizId);
+      setQuizzes(updatedQuizzes);
+
+      // Recategorize
+      const updatedCategorized: CategorizedQuizzes = {
+        All: updatedQuizzes,
+      };
+
+      // Group by month again
+      updatedQuizzes.forEach((quiz: Quiz) => {
+        let dateStr = "Unknown Date";
+
+        if (quiz.createdAt) {
+          const date = quiz.createdAt.toDate
+            ? quiz.createdAt.toDate()
+            : new Date(
+                typeof quiz.createdAt === "number"
+                  ? quiz.createdAt < 10000000000
+                    ? quiz.createdAt * 1000
+                    : quiz.createdAt
+                  : quiz.createdAt
+              );
+
+          dateStr = date.toLocaleString("default", {
+            month: "long",
+            year: "numeric",
+          });
+        }
+
+        if (!updatedCategorized[dateStr]) {
+          updatedCategorized[dateStr] = [];
+        }
+        updatedCategorized[dateStr].push(quiz);
+      });
+
+      setCategorizedQuizzes(updatedCategorized);
+      setIsDeleting(false);
+      toast.success("Quiz deleted successfully");
+    } catch (err) {
+      console.error("Error deleting quiz:", err);
+      toast.error("Failed to delete quiz. Please try again.");
+      setIsDeleting(false);
+    }
+  };
+
+  const deleteAllQuizzes = async (): Promise<void> => {
+    try {
+      setIsDeleting(true);
+
+      // Get all quizzes
+      const quizzesCollection = collection(db, "quizzes");
+      const quizzesSnapshot = await getDocs(quizzesCollection);
 
       // Delete each document
       const deletePromises: Promise<void>[] = [];
-      quizResultsSnapshot.forEach(
+      quizzesSnapshot.forEach(
         (document: QueryDocumentSnapshot<DocumentData>) => {
-          deletePromises.push(deleteDoc(doc(db, "quizResults", document.id)));
+          deletePromises.push(deleteDoc(doc(db, "quizzes", document.id)));
         }
       );
 
       await Promise.all(deletePromises);
 
-      setQuizResults([]);
-      setCategorizedResults({ All: [] });
+      setQuizzes([]);
+      setCategorizedQuizzes({ All: [] });
       setActiveCategory("All");
-      setIsClearing(false);
-      toast.success("All quiz results have been cleared");
+      setIsDeleting(false);
+      toast.success("All quizzes have been deleted");
     } catch (err) {
-      console.error("Error clearing quiz results:", err);
-      setError("Failed to clear quiz results. Please try again later.");
-      toast.error("Could not clear quiz results. Please try again.");
-
-      setIsClearing(false);
+      console.error("Error deleting quizzes:", err);
+      setError("Failed to delete quizzes. Please try again later.");
+      toast.error("Could not delete quizzes. Please try again.");
+      setIsDeleting(false);
     }
   };
 
-  const clearCategoryQuizResults = async (category: string): Promise<void> => {
+  const deleteCategoryQuizzes = async (category: string): Promise<void> => {
     if (category === "All") {
-      return clearAllQuizResults();
+      return deleteAllQuizzes();
     }
 
     try {
-      setIsClearing(true);
+      setIsDeleting(true);
 
       // Get document IDs for the specific category
-      const docIds = categorizedResults[category].map((result) => result.id);
+      const docIds = categorizedQuizzes[category].map((quiz) => quiz.id);
 
       // Delete each document
       const deletePromises: Promise<void>[] = [];
       docIds.forEach((id: string) => {
-        deletePromises.push(deleteDoc(doc(db, "quizResults", id)));
+        deletePromises.push(deleteDoc(doc(db, "quizzes", id)));
       });
 
       await Promise.all(deletePromises);
 
       // Update local state
-      const updatedResults = quizResults.filter(
-        (result) => (result.quizTitle || "Untitled Quiz") !== category
-      );
+      const updatedQuizzes = quizzes.filter((quiz) => {
+        // Get quiz date category
+        if (!quiz.createdAt) return true; // Keep quizzes with unknown date
 
-      setQuizResults(updatedResults);
+        const date = quiz.createdAt.toDate
+          ? quiz.createdAt.toDate()
+          : new Date(
+              typeof quiz.createdAt === "number"
+                ? quiz.createdAt < 10000000000
+                  ? quiz.createdAt * 1000
+                  : quiz.createdAt
+                : quiz.createdAt
+            );
 
-      // Recategorize
-      const updatedCategorized: CategorizedQuizResults = {
-        All: updatedResults,
-      };
-
-      updatedResults.forEach((result: QuizResult) => {
-        const cat = result.quizTitle || "Untitled Quiz";
-        if (!updatedCategorized[cat]) {
-          updatedCategorized[cat] = [];
-        }
-        updatedCategorized[cat].push(result);
+        const dateStr = date.toLocaleString("default", {
+          month: "long",
+          year: "numeric",
+        });
+        return dateStr !== category;
       });
 
-      setCategorizedResults(updatedCategorized);
+      setQuizzes(updatedQuizzes);
+
+      // Recategorize
+      const updatedCategorized: CategorizedQuizzes = {
+        All: updatedQuizzes,
+      };
+
+      updatedQuizzes.forEach((quiz: Quiz) => {
+        let dateStr = "Unknown Date";
+
+        if (quiz.createdAt) {
+          const date = quiz.createdAt.toDate
+            ? quiz.createdAt.toDate()
+            : new Date(
+                typeof quiz.createdAt === "number"
+                  ? quiz.createdAt < 10000000000
+                    ? quiz.createdAt * 1000
+                    : quiz.createdAt
+                  : quiz.createdAt
+              );
+
+          dateStr = date.toLocaleString("default", {
+            month: "long",
+            year: "numeric",
+          });
+        }
+
+        if (!updatedCategorized[dateStr]) {
+          updatedCategorized[dateStr] = [];
+        }
+        updatedCategorized[dateStr].push(quiz);
+      });
+
+      setCategorizedQuizzes(updatedCategorized);
 
       if (category === activeCategory) {
         setActiveCategory("All");
       }
 
-      setIsClearing(false);
-      toast.success(`All results for "${category}" have been cleared`);
+      setIsDeleting(false);
+      toast.success(`All quizzes from "${category}" have been deleted`);
     } catch (err) {
-      console.error(
-        `Error clearing quiz results for category ${category}:`,
-        err
-      );
-      setError("Failed to clear quiz results. Please try again later.");
+      console.error(`Error deleting quizzes for category ${category}:`, err);
+      setError("Failed to delete quizzes. Please try again later.");
       toast.error(
-        `Could not clear results for "${category}". Please try again.`
+        `Could not delete quizzes from "${category}". Please try again.`
       );
 
-      setIsClearing(false);
+      setIsDeleting(false);
     }
   };
 
@@ -295,7 +406,7 @@ const QuizHistory: FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg font-medium">Loading quiz results...</div>
+        <div className="text-lg font-medium">Loading quizzes...</div>
       </div>
     );
   }
@@ -309,140 +420,151 @@ const QuizHistory: FC = () => {
   }
 
   // Get categories for the tab navigation
-  const categories = Object.keys(categorizedResults).sort((a, b) => {
+  const categories = Object.keys(categorizedQuizzes).sort((a, b) => {
     // Keep "All" at the beginning
     if (a === "All") return -1;
     if (b === "All") return 1;
     return a.localeCompare(b);
   });
 
-  // Get current results to display based on active category
-  const displayResults = categorizedResults[activeCategory] || [];
+  // Get current quizzes to display based on active category
+  const displayQuizzes = categorizedQuizzes[activeCategory] || [];
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <button
         onClick={() => router.back()}
         className="mb-6 text-blue-600 hover:underline flex items-center"
       >
         ← Back
       </button>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Quiz History</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h1 className="text-2xl font-bold">Quiz Dashboard</h1>
         <button
-          className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+          className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto"
           onClick={() => {
             // Set up the delete dialog properties
             setDeleteItemType(
               activeCategory === "All"
-                ? "all quiz results"
-                : `all results for "${activeCategory}"`
+                ? "all quizzes"
+                : `all quizzes from "${activeCategory}"`
             );
 
             // Store the function to call when confirmed
             setPendingDeleteAction(() =>
               activeCategory === "All"
-                ? clearAllQuizResults
-                : () => clearCategoryQuizResults(activeCategory)
+                ? deleteAllQuizzes
+                : () => deleteCategoryQuizzes(activeCategory)
             );
 
             // Open the dialog
             setDeleteDialogOpen(true);
           }}
-          disabled={isClearing || displayResults.length === 0}
+          disabled={isDeleting || displayQuizzes.length === 0}
         >
-          {isClearing
-            ? "Clearing..."
-            : `Clear ${
+          {isDeleting
+            ? "Deleting..."
+            : `Delete ${
                 activeCategory === "All" ? "All" : activeCategory
-              } Results`}
+              } Quizzes`}
         </button>
       </div>
 
-      {/* Category tabs */}
+      {/* Category tabs - Horizontally scrollable on mobile */}
       <div className="mb-6 overflow-x-auto">
-        <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-gray-200 min-w-max">
           {categories.map((category) => (
             <button
               key={category}
-              className={`px-4 py-2 font-medium ${
+              className={`px-3 py-2 text-sm sm:text-base sm:px-4 font-medium whitespace-nowrap ${
                 activeCategory === category
                   ? "border-b-2 border-blue-500 text-blue-600"
                   : "text-gray-600 hover:text-gray-800"
               }`}
               onClick={() => setActiveCategory(category)}
             >
-              {category} ({categorizedResults[category]?.length || 0})
+              {category} ({categorizedQuizzes[category]?.length || 0})
             </button>
           ))}
         </div>
       </div>
 
-      {displayResults.length === 0 ? (
+      {displayQuizzes.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-gray-500">
-            No quiz results found in this category.
-          </p>
+          <p className="text-gray-500">No quizzes found in this category.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="py-2 px-4 border-b text-left">User</th>
-                {activeCategory === "All" && (
-                  <th className="py-2 px-4 border-b text-left">Quiz Title</th>
-                )}
-                <th className="py-2 px-4 border-b text-left">Date</th>
-                <th className="py-2 px-4 border-b text-left">Score</th>
-                <th className="py-2 px-4 border-b text-left">Percentage</th>
-                <th className="py-2 px-4 border-b text-left">
-                  Avg Response Time
-                </th>
-                <th className="py-2 px-4 border-b text-left">
-                  Total Questions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayResults.map((result: QuizResult) => (
-                <tr key={result.id} className="hover:bg-gray-50">
-                  <td className="py-2 px-4 border-b">
-                    {result.userDisplayName || result.userId || "Anonymous"}
-                  </td>
-                  {activeCategory === "All" && (
-                    <td className="py-2 px-4 border-b">
-                      {result.quizTitle || "Untitled Quiz"}
-                    </td>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {displayQuizzes.map((quiz: Quiz) => (
+            <div
+              key={quiz.id}
+              className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-200"
+            >
+              <div className="p-4">
+                <h2
+                  className="text-lg font-semibold mb-2 truncate"
+                  title={quiz.quizTitle}
+                >
+                  {quiz.quizTitle || "Untitled Quiz"}
+                </h2>
+                <div className="flex justify-between items-center text-sm text-gray-600 mb-3">
+                  <span>{formatDate(quiz.createdAt)}</span>
+                  <span>{quiz.questions?.length || 0} questions</span>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {quiz.questions?.slice(0, 3).map((q: any, index: number) => (
+                    <span
+                      key={index}
+                      className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full truncate max-w-full"
+                      title={q.question}
+                    >
+                      {q.question?.substring(0, 25)}
+                      {q.question?.length > 25 ? "..." : ""}
+                    </span>
+                  ))}
+                  {quiz.questions?.length > 3 && (
+                    <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
+                      +{quiz.questions.length - 3} more
+                    </span>
                   )}
-                  <td className="py-2 px-4 border-b">
-                    {formatDate(result.timestamp)}
-                  </td>
-                  <td className="py-2 px-4 border-b">
-                    {result.score || 0} / {result.totalQuestions || 0}
-                  </td>
-                  <td className="py-2 px-4 border-b">
-                    {result.percentage || 0}%
-                  </td>
-                  <td className="py-2 px-4 border-b">
-                    {result.averageResponseTime?.toFixed(2) || 0} sec
-                  </td>
-                  <td className="py-2 px-4 border-b">
-                    {result.totalQuestions || 0}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <button
+                    onClick={() => setSelectedQuiz(quiz)}
+                    className="bg-blue-500 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm flex-1"
+                  >
+                    View
+                  </button>
+                  <button
+                    onClick={() => router.push(`/quizzes/${quiz.id}/edit`)}
+                    className="bg-green-500 hover:bg-green-700 text-white py-1 px-3 rounded text-sm flex-1"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDeleteItemType("quiz");
+                      setPendingDeleteAction(() => () => deleteQuiz(quiz.id));
+                      setDeleteDialogOpen(true);
+                    }}
+                    className="bg-red-500 hover:bg-red-700 text-white py-1 px-3 rounded text-sm"
+                    disabled={isDeleting}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {displayResults.length > 0 && (
-        <div className="mt-4">
+      {displayQuizzes.length > 0 && (
+        <div className="mt-6">
           <p className="text-gray-500 text-sm">
             {activeCategory === "All"
-              ? `Total results: ${displayResults.length}`
-              : `Total results for "${activeCategory}": ${displayResults.length}`}
+              ? `Total quizzes: ${displayQuizzes.length}`
+              : `Total quizzes from "${activeCategory}": ${displayQuizzes.length}`}
           </p>
         </div>
       )}
@@ -457,8 +579,14 @@ const QuizHistory: FC = () => {
         }}
         itemType={deleteItemType}
       />
+
+      {/* View Quiz Dialog */}
+      <ViewQuizDialog
+        quiz={selectedQuiz}
+        onClose={() => setSelectedQuiz(null)}
+      />
     </div>
   );
 };
 
-export default QuizHistory;
+export default QuizzesDashboard;
