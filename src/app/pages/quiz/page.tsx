@@ -64,7 +64,8 @@ const Quiz: React.FC = () => {
       setIsSavingScore(true);
       setSaveError(null);
 
-      const displayName = user.email || "Anonymous User";
+      // Use user.email as userDisplayName parameter (this might be an email address)
+      const userEmailOrName = user.email || "Anonymous User";
 
       // Calculate average response time (in seconds)
       const totalResponseTime = responseTimes.reduce(
@@ -87,7 +88,7 @@ const Quiz: React.FC = () => {
       // Save score with all required information including response time
       await saveQuizScore(
         user.uid,
-        displayName,
+        userEmailOrName, // This will be used as userDisplayName and potentially matched with users collection
         activeQuizTitle,
         quizState.score,
         questions.length,

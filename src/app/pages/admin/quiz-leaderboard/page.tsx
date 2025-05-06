@@ -28,6 +28,7 @@ interface LeaderboardEntry {
   id: string;
   userId: string;
   userDisplayName: string;
+  DisplayName: string;
   userEmail?: string;
   quizTitle: string;
   score: number;
@@ -171,8 +172,8 @@ const AdminLeaderboard: React.FC<AdminLeaderboardProps> = ({ backToAdmin }) => {
       .map((entry, index) => {
         return [
           index + 1,
-          `"${entry.userDisplayName || "Anonymous User"}"`,
-          `"${entry.userEmail || "N/A"}"`,
+          `"${entry.DisplayName || "Anonymous User"}"`,
+          `"${entry.userDisplayName || "N/A"}"`,
           `${entry.score}/${entry.totalQuestions}`,
           `${entry.percentage.toFixed(1)}%`,
           ...(isSpeedRace
@@ -444,12 +445,12 @@ const AdminLeaderboard: React.FC<AdminLeaderboardProps> = ({ backToAdmin }) => {
                             isCurrentUser ? "font-semibold text-blue-700" : ""
                           }
                         >
-                          {entry.userDisplayName || "Anonymous User"}
+                          {entry.DisplayName || "Anonymous User"}
                           {isCurrentUser && " (You)"}
                         </span>
                       </div>
                       <div className="text-xs text-gray-500">
-                        {entry.userEmail || "No email"}
+                        {entry.userDisplayName || "No email"}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-700">

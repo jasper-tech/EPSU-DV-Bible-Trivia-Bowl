@@ -57,7 +57,6 @@ const DeleteConfirmDialog = ({
   );
 };
 
-// Assuming this matches the Quiz type from your types file
 interface Quiz {
   id: string;
   quizTitle: string;
@@ -385,14 +384,12 @@ const QuizzesDashboard: FC = () => {
 
     // Handle timestamp as seconds or milliseconds (number)
     if (typeof timestamp === "number") {
-      // If timestamp is in seconds (Firestore sometimes stores as seconds)
       if (timestamp < 10000000000) {
         return new Date(timestamp * 1000).toLocaleString();
       }
       return new Date(timestamp).toLocaleString();
     }
 
-    // Handle string timestamps
     if (typeof timestamp === "string") {
       const date = new Date(timestamp);
       if (!isNaN(date.getTime())) {
@@ -535,12 +532,12 @@ const QuizzesDashboard: FC = () => {
                   >
                     View
                   </button>
-                  <button
+                  {/* <button
                     onClick={() => router.push(`/quizzes/${quiz.id}/edit`)}
                     className="bg-green-500 hover:bg-green-700 text-white py-1 px-3 rounded text-sm flex-1"
                   >
                     Edit
-                  </button>
+                  </button> */}
                   <button
                     onClick={() => {
                       setDeleteItemType("quiz");

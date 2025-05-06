@@ -10,6 +10,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { db } from "./firebase";
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Save quiz score to Firestore
@@ -23,11 +24,35 @@ export const saveQuizScore = async (
   averageResponseTime?: number
 ) => {
   try {
+    // First check if the userDisplayName is an email and find the actual DisplayName
+    let DisplayName = userDisplayName;
+
+    // Check if userDisplayName looks like an email
+    if (userDisplayName.includes("@")) {
+      // Query the users collection to find a user with this email
+      const usersRef = collection(db, "users");
+      const emailQuery = query(usersRef, where("email", "==", userDisplayName));
+
+      const userSnapshot = await getDocs(emailQuery);
+
+      if (!userSnapshot.empty) {
+        // User found with this email, get their name
+        const userData = userSnapshot.docs[0].data();
+        // Check for name or displayName in the user document
+        if (userData.name) {
+          DisplayName = userData.name;
+        } else if (userData.displayName) {
+          DisplayName = userData.displayName;
+        }
+      }
+    }
+
     const quizResultsRef = collection(db, "quizResults");
 
     const result = await addDoc(quizResultsRef, {
       userId,
-      userDisplayName,
+      userDisplayName, // Original value (might be email)
+      DisplayName, // New field: actual name from users collection if found
       quizTitle,
       score,
       totalQuestions,
@@ -46,6 +71,7 @@ export const saveQuizScore = async (
     throw error;
   }
 };
+
 export const getQuizLeaderboard = async (
   quizTitle: string,
   limitCount = 10

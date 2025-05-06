@@ -10,6 +10,7 @@ import { db } from "@/app/lib/firebase";
 interface LeaderboardEntry {
   id: string;
   userId: string;
+  DisplayName: string;
   userDisplayName: string;
   quizTitle: string;
   score: number;
@@ -220,10 +221,10 @@ const Leaderboard: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {isCurrentUser ? (
                         <span className="font-semibold text-blue-700">
-                          {entry.userDisplayName || user.email || "You"} (You)
+                          {entry.DisplayName || user.email || "You"} (You)
                         </span>
                       ) : (
-                        entry.userDisplayName || "Anonymous User"
+                        entry.DisplayName || "Anonymous User"
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-700">
