@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -12,7 +12,6 @@ import Box from "@mui/material/Box";
 import GitHubIcon from "@mui/icons-material/GitHub";
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState<string>("Loading...");
   const [loading, setLoading] = useState(true);
 
@@ -21,7 +20,6 @@ export default function ProfilePage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        setUser(currentUser);
         setUsername("Loading...");
 
         try {
@@ -80,7 +78,7 @@ export default function ProfilePage() {
                 className="flex items-center hover:text-blue-600 transition-colors"
                 title="Jasper-tech on GitHub"
               >
-                <GitHubIcon size={22} />
+                <GitHubIcon fontSize="small" />
                 <span className="ml-2">Jasper-tech</span>
               </a>
             </div>
