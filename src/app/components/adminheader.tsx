@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+// import Image from "next/image";
 import {
   FaSignOutAlt,
   FaBars,
@@ -10,6 +10,7 @@ import {
   FaQuestion,
   FaClipboardList,
   FaCloudUploadAlt,
+  FaHome,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { CircularProgress, Tabs, Tab, Box, Badge, Modal } from "@mui/material";
@@ -41,7 +42,6 @@ const AdminHeader = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [quizzesLoading, setQuizzesLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [uploads, setUploads] = useState<string[]>([]);
   const [filteredUploads, setFilteredUploads] = useState<string[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -131,7 +131,6 @@ const AdminHeader = () => {
         const uploadedQuizzes = snapshot.docs.map(
           (doc) => doc.data().quizTitle
         );
-        setUploads(uploadedQuizzes);
 
         // Filter uploads based on activeQuiz in quizzes collection
         const filtered = uploadedQuizzes.filter((uploadTitle) =>
@@ -149,6 +148,7 @@ const AdminHeader = () => {
 
     return () => unsubscribe();
   }, [quizzes]);
+
   const handleSignOut = async () => {
     try {
       await signOut(auth);
@@ -234,7 +234,7 @@ const AdminHeader = () => {
           >
             <FaBars />
           </button>
-          <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white">
+          {/* <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white">
             <Image
               src={userData?.image || "/default-profile.png"}
               alt="Profile"
@@ -242,7 +242,7 @@ const AdminHeader = () => {
               height={40}
               className="object-cover"
             />
-          </div>
+          </div> */}
           <div>
             <span className="font-semibold text-base">
               {loading ? "Loading..." : userData?.name}
@@ -251,10 +251,17 @@ const AdminHeader = () => {
         </div>
 
         {/* Right: Role + Logout */}
-        <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+        <div className="flex items-center justify-between w-full sm:w-auto gap-2">
           <p className="text-sm text-gray-400">
             {loading ? "Loading role..." : `Quizmaster | ${userData?.role}`}
           </p>
+          <button
+            onClick={() => router.push("/pages/admin")}
+            className="flex items-center text-green-400 hover:text-green-600"
+          >
+            <FaHome size={20} />
+            <span className="ml-2 text-sm">Home</span>
+          </button>
           <button
             onClick={handleUploadsClick}
             className="relative flex items-center text-blue-400 hover:text-blue-600"
