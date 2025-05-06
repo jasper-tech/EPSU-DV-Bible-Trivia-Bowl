@@ -307,7 +307,7 @@ const AdminLeaderboard: React.FC<AdminLeaderboardProps> = ({ backToAdmin }) => {
           <button
             onClick={exportToCSV}
             disabled={leaderboardData.length === 0}
-            className="flex items-center bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center bg-green-400 hover:bg-green-600 text-white px-3 py-2 rounded transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FaDownload />
             <span className="ml-2">Export CSV</span>
