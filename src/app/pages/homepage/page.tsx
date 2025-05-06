@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
+  User,
 } from "firebase/auth";
 import { auth, db } from "../../lib/firebase";
 import { setDoc, doc, serverTimestamp } from "firebase/firestore";
@@ -30,7 +31,7 @@ export default function SignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
-  const [tempUser, setTempUser] = useState(null);
+  const [tempUser, setTempUser] = useState<User | null>(null);
 
   const router = useRouter();
 
@@ -101,13 +102,6 @@ export default function SignupPage() {
     const toastId = toast.loading("Completing registration...");
 
     try {
-      // In a real implementation, you would verify the code here
-      // For Firebase email verification, the user would click a link in their email
-      // which would take them to a verification page
-
-      // Since Firebase doesn't support direct code verification,
-      // we're simulating the completion part after verification
-
       // Create the user document in Firestore
       await setDoc(doc(db, "users", tempUser.uid), {
         name,
@@ -119,9 +113,10 @@ export default function SignupPage() {
       toast.success("Account created successfully! 🎉", { id: toastId });
       setIsNavigating(true);
       router.push("/pages/profile");
-    } catch (err) {
+    } catch (error) {
       toast.dismiss(toastId);
       toast.error("Failed to complete registration. Please try again.");
+      console.error("Error completing registration:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -254,8 +249,8 @@ export default function SignupPage() {
 
               <p className="text-sm text-gray-600 text-center">
                 Please check your email and click the verification link. Once
-                verified, click &quot;Complete Sign Up if you&apos;ve already
-                verified your email.
+                verified, click &quot;Complete Sign Up&quot; if you&apos;ve
+                already verified your email.
               </p>
 
               {/* <div className="relative">

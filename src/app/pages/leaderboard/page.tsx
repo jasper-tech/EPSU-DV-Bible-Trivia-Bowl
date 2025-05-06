@@ -73,7 +73,7 @@ const Leaderboard: React.FC = () => {
         const data = await getQuizLeaderboard(quizTitle, 20);
 
         // Sort data based on quiz type
-        let sortedData = [...data] as LeaderboardEntry[];
+        const sortedData = [...data] as LeaderboardEntry[];
 
         if (isSpeedRace) {
           // For SpeedRace quizzes, prioritize sorting by score (descending)

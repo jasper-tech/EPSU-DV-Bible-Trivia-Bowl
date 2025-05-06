@@ -1,11 +1,10 @@
 import { db } from "../lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { Quiz, Question } from "../types/quiz"; // Import types
+import { Question } from "../types/quiz";
 
-// Function to create a quiz
 const createQuiz = async (
   quizNumber: string,
-  questions: Question[], // Use the defined Question type
+  questions: Question[],
   quizmasterId: string
 ): Promise<void> => {
   try {
@@ -15,8 +14,8 @@ const createQuiz = async (
       createdBy: quizmasterId,
       createdAt: serverTimestamp(),
       questions,
-      participants: [], // Initially empty
-      winners: [], // Initially empty
+      participants: [],
+      winners: [],
     });
 
     console.log("Quiz created with ID:", quizRef.id);

@@ -16,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "DV Quiz App",
-  description: "bible trivia app",
+  description:
+    "This is a quiz app built with Next.js and TypeScript. It is a simple quiz app that allows users to take quizzes and view their scores. Created by @jasper-tech on github.",
 };
 
 export default function RootLayout({
