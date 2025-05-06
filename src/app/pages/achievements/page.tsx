@@ -50,9 +50,11 @@ const UserAchievements: React.FC = () => {
 
         for (const quiz of availableQuizzes) {
           const leaderboardData = await getQuizLeaderboard(quiz);
+          // Cast the leaderboard data to the correct type
+          const typedLeaderboardData = leaderboardData as UserScoreEntry[];
 
-          const hasUserEntries = leaderboardData.some(
-            (entry: UserScoreEntry) => entry.userId === user.uid
+          const hasUserEntries = typedLeaderboardData.some(
+            (entry) => entry.userId === user.uid
           );
 
           if (hasUserEntries) {
@@ -78,7 +80,7 @@ const UserAchievements: React.FC = () => {
     };
 
     fetchUserQuizzes();
-  }, [user, availableQuizzes]);
+  }, [user, availableQuizzes, quizTitle]);
 
   // Fetch user's scores for the selected quiz
   useEffect(() => {
@@ -92,6 +94,7 @@ const UserAchievements: React.FC = () => {
         // Get all scores for this quiz
         const allScores = await getQuizLeaderboard(quizTitle);
 
+        // Explicitly cast to UserScoreEntry[]
         const typedScores = allScores as UserScoreEntry[];
 
         const currentUserScores = typedScores.filter(

@@ -16,14 +16,22 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
+// Define types for user data and form state
+interface UserFormData {
+  name: string;
+  email: string;
+  image: string;
+  role: string;
+}
+
 const EditUser = () => {
   const params = useParams();
   const router = useRouter();
-  const id = params.id;
+  const id = params.id as string;
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({
+  const [loading, setLoading] = useState<boolean>(true);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [formData, setFormData] = useState<UserFormData>({
     name: "",
     email: "",
     image: "",
@@ -36,7 +44,7 @@ const EditUser = () => {
     }
   }, [id]);
 
-  const fetchUserData = async (userId) => {
+  const fetchUserData = async (userId: string) => {
     try {
       const userDoc = await getDoc(doc(db, "users", userId));
       if (userDoc.exists()) {
@@ -59,13 +67,14 @@ const EditUser = () => {
     }
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
     });
   };
+
   const handleBack = () => {
     router.back();
   };

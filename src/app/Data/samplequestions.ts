@@ -44,7 +44,8 @@ export function useFetchQuestions() {
             })
           );
 
-          const questionType =
+          // Explicitly type questionType as "text" | "multiple-choice"
+          const questionType: "text" | "multiple-choice" =
             processedAnswers.length > 1 ? "multiple-choice" : "text";
 
           if (questionType === "multiple-choice" && !q.correctAnswerId) {
@@ -56,7 +57,7 @@ export function useFetchQuestions() {
           return {
             id: q.questionId,
             text: q.text || "",
-            questionType,
+            questionType, // Now properly typed
             answers: processedAnswers,
             correctAnswerId: q.correctAnswerId || "",
             explanation: q.explanation,
@@ -65,7 +66,8 @@ export function useFetchQuestions() {
           };
         });
 
-        setQuestions(processedQuestions);
+        // Cast to Question[] to ensure TypeScript recognizes the correct type
+        setQuestions(processedQuestions as Question[]);
       } catch (err) {
         console.error("Failed to fetch questions:", err);
         toast.error("Error fetching quiz questions.");

@@ -105,7 +105,8 @@ const AdminLeaderboard: React.FC<AdminLeaderboardProps> = ({ backToAdmin }) => {
         setError(null);
 
         const data = await getQuizLeaderboard(selectedQuiz, 100);
-        setLeaderboardData(data);
+        // Cast the data to ensure it matches the LeaderboardEntry type
+        setLeaderboardData(data as unknown as LeaderboardEntry[]);
       } catch (err) {
         console.error("Error fetching leaderboard:", err);
         setError("Failed to load leaderboard data. Please try again.");
@@ -231,7 +232,13 @@ const AdminLeaderboard: React.FC<AdminLeaderboardProps> = ({ backToAdmin }) => {
           }
           break;
         case "date":
-          comparison = a.timestamp.seconds - b.timestamp.seconds;
+          // Check if timestamp exists and has seconds property
+          if (
+            a.timestamp?.seconds !== undefined &&
+            b.timestamp?.seconds !== undefined
+          ) {
+            comparison = a.timestamp.seconds - b.timestamp.seconds;
+          }
           break;
         default:
           comparison = b.score - a.score;
