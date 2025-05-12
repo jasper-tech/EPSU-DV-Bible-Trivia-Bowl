@@ -22,6 +22,7 @@ import {
   collection,
   deleteDoc,
   onSnapshot,
+  updateDoc,
   QuerySnapshot,
   DocumentData,
 } from "firebase/firestore";
@@ -222,6 +223,28 @@ const AdminHeader = () => {
     setActiveTab(newValue);
   };
 
+  const handleUnupload = async (quizTitle: string) => {
+    try {
+      // Find the quiz document with matching title
+      const matchingQuiz = quizzes.find((quiz) => quiz.quizTitle === quizTitle);
+
+      if (!matchingQuiz) {
+        toast.error("Quiz not found");
+        return;
+      }
+
+      // Update the quiz document to set activeQuiz to 0
+      await updateDoc(doc(db, "quizzes", matchingQuiz.id), {
+        activeQuiz: 0,
+      });
+
+      toast.success("Quiz unuploaded successfully");
+    } catch (error) {
+      console.error("Error unuploading quiz:", error);
+      toast.error("Failed to unupload quiz");
+    }
+  };
+
   return (
     <>
       {/* Header */}
@@ -370,10 +393,19 @@ const AdminHeader = () => {
         >
           <h2 className="text-lg font-bold mb-4">Uploaded Quizzes</h2>
           {filteredUploads.length > 0 ? (
-            <ul className="list-disc pl-5">
+            <ul className="space-y-4">
               {filteredUploads.map((quizTitle, index) => (
-                <li key={index} className="text-gray-700 mb-2">
-                  {quizTitle}
+                <li
+                  key={index}
+                  className="flex items-center justify-between p-2 border rounded"
+                >
+                  <span className="text-gray-700">{quizTitle}</span>
+                  <button
+                    onClick={() => handleUnupload(quizTitle)}
+                    className="ml-4 bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-all duration-200"
+                  >
+                    Unupload
+                  </button>
                 </li>
               ))}
             </ul>
@@ -382,7 +414,7 @@ const AdminHeader = () => {
           )}
           <button
             onClick={handleCloseModal}
-            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-all duration-200"
+            className="mt-6 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-all duration-200"
           >
             Close
           </button>
