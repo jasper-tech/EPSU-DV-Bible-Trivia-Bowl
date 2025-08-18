@@ -1,5 +1,15 @@
 "use client";
-import { Box, Typography, Paper, CircularProgress, Alert } from "@mui/material";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import {
+  Box,
+  Typography,
+  Paper,
+  CircularProgress,
+  Alert,
+  Modal,
+  Button,
+} from "@mui/material";
 import React, { useState, useEffect } from "react";
 import { Answer, QuizState } from "../../types/quiz";
 import { useFetchQuestions } from "../../Data/samplequestions";
@@ -9,6 +19,18 @@ import Timer from "../../components/timer";
 import QuestionCard from "../../components/questioncard";
 import { useAuth } from "@/app/context/AuthContext";
 import { saveQuizScore } from "@/app/lib/quizservice";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/app/lib/firebase";
+
+interface CompletedQuizResult {
+  id: string;
+  userId: string;
+  quizTitle: string;
+  score: number;
+  totalQuestions: number;
+  percentage: number;
+  timestamp: any;
+}
 
 const Quiz: React.FC = () => {
   const { questions, loading, error, activeQuizTitle } = useFetchQuestions();
@@ -22,11 +44,23 @@ const Quiz: React.FC = () => {
     userAnswers: [],
   });
 
-  const [timeRemaining, setTimeRemaining] = useState<number>(45);
-  const [isTimerActive, setIsTimerActive] = useState<boolean>(true);
+  // State for quiz duration (will be fetched from database)
+  const [totalQuizTime, setTotalQuizTime] = useState<number>(300); // Default 5 minutes
+  const [timeRemaining, setTimeRemaining] = useState<number>(300);
+  const [isTimerActive, setIsTimerActive] = useState<boolean>(false);
   const [showScore, setShowScore] = useState<boolean>(false);
   const [isSavingScore, setIsSavingScore] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // States for completion check
+  const [isCheckingCompletion, setIsCheckingCompletion] =
+    useState<boolean>(false);
+  const [showCompletionModal, setShowCompletionModal] =
+    useState<boolean>(false);
+  const [completedQuizData, setCompletedQuizData] =
+    useState<CompletedQuizResult | null>(null);
+  const [canStartQuiz, setCanStartQuiz] = useState<boolean>(false);
+
   // Track question response times
   const [responseTimes, setResponseTimes] = useState<number[]>([]);
   // Track when the question was first shown to the user
@@ -37,9 +71,90 @@ const Quiz: React.FC = () => {
   const currentQuestion =
     questions.length > 0 ? questions[quizState.currentQuestionIndex] : null;
 
+  // Check if user has already completed this quiz
+  useEffect(() => {
+    const checkQuizCompletion = async () => {
+      if (!user || !activeQuizTitle) {
+        setCanStartQuiz(true);
+        return;
+      }
+
+      try {
+        setIsCheckingCompletion(true);
+
+        // Query quizResults collection for this user and quiz
+        const completionQuery = query(
+          collection(db, "quizResults"),
+          where("userId", "==", user.uid),
+          where("quizTitle", "==", activeQuizTitle)
+        );
+
+        const snapshot = await getDocs(completionQuery);
+
+        if (!snapshot.empty) {
+          // User has already completed this quiz
+          const completedQuiz = snapshot.docs[0].data() as CompletedQuizResult;
+          setCompletedQuizData(completedQuiz);
+          setShowCompletionModal(true);
+          setCanStartQuiz(false);
+        } else {
+          // User hasn't completed this quiz yet, can proceed
+          setCanStartQuiz(true);
+        }
+      } catch (error) {
+        console.error("Error checking quiz completion:", error);
+        // On error, allow user to proceed (fail open)
+        setCanStartQuiz(true);
+      } finally {
+        setIsCheckingCompletion(false);
+      }
+    };
+
+    checkQuizCompletion();
+  }, [user, activeQuizTitle]);
+
+  // Start timer when questions are loaded and fetch quiz duration
+  useEffect(() => {
+    const fetchQuizDuration = async () => {
+      if (questions.length > 0 && !isTimerActive && canStartQuiz) {
+        try {
+          // Get the active quiz to fetch its duration
+          const quizzesSnapshot = await getDocs(collection(db, "quizzes"));
+          const activeQuiz = quizzesSnapshot.docs.find(
+            (doc) => doc.data().activeQuiz === 1
+          );
+
+          if (activeQuiz) {
+            const quizData = activeQuiz.data();
+            const duration = quizData.quizDuration || 300; // Default 5 minutes
+            setTotalQuizTime(duration);
+            setTimeRemaining(duration);
+          } else {
+            // Fallback: calculate based on questions if no active quiz found
+            const calculatedTime = questions.length * 45;
+            setTotalQuizTime(calculatedTime);
+            setTimeRemaining(calculatedTime);
+          }
+
+          setIsTimerActive(true);
+        } catch (error) {
+          console.error("Error fetching quiz duration:", error);
+          // Fallback to calculated time
+          const calculatedTime = questions.length * 45;
+          setTotalQuizTime(calculatedTime);
+          setTimeRemaining(calculatedTime);
+          setIsTimerActive(true);
+        }
+      }
+    };
+
+    fetchQuizDuration();
+  }, [questions.length, isTimerActive, canStartQuiz]);
+
   // Handle quiz completion
   useEffect(() => {
     if (quizState.isQuizCompleted) {
+      setIsTimerActive(false); // Stop timer when quiz completes
       setShowScore(true);
       saveScoreToFirestore();
     }
@@ -47,11 +162,10 @@ const Quiz: React.FC = () => {
   }, [quizState.isQuizCompleted]);
 
   useEffect(() => {
-    setTimeRemaining(45);
-    setIsTimerActive(true);
-    // Reset the start time
-    setQuestionStartTime(Date.now());
-  }, [quizState.currentQuestionIndex]);
+    if (canStartQuiz) {
+      setQuestionStartTime(Date.now());
+    }
+  }, [quizState.currentQuestionIndex, canStartQuiz]);
 
   // Save quiz results to Firestore database
   const saveScoreToFirestore = async () => {
@@ -64,7 +178,6 @@ const Quiz: React.FC = () => {
       setIsSavingScore(true);
       setSaveError(null);
 
-      // Use user.email as userDisplayName parameter (this might be an email address)
       const userEmailOrName = user.email || "Anonymous User";
 
       // Calculate average response time (in seconds)
@@ -81,19 +194,18 @@ const Quiz: React.FC = () => {
       const enhancedUserAnswers = quizState.userAnswers.map(
         (answer, index) => ({
           ...answer,
-          responseTime: responseTimes[index] || 0, // Individual response time per question
+          responseTime: responseTimes[index] || 0,
         })
       );
 
-      // Save score with all required information
       await saveQuizScore(
         user.uid,
-        userEmailOrName, //  userDisplayName and potentially matched with users collection
+        userEmailOrName,
         activeQuizTitle,
         quizState.score,
         questions.length,
         enhancedUserAnswers,
-        parseFloat(averageResponseTime.toString()) // average response time
+        parseFloat(averageResponseTime.toString())
       );
     } catch (error) {
       console.error("Error saving score:", error);
@@ -105,20 +217,16 @@ const Quiz: React.FC = () => {
 
   const handleSubmitAnswer = (userAnswer: Answer) => {
     if (!currentQuestion) return;
-    setIsTimerActive(false);
 
     // Calculate response time for this question (in seconds)
     const responseTime = (Date.now() - questionStartTime) / 1000;
-    // Add to the response times array
     setResponseTimes((prev) => [...prev, responseTime]);
 
     // Determine if answer is correct based on question type
     const isCorrect =
       currentQuestion.questionType === "multiple-choice"
-        ? // For multiple-choice, directly compare IDs
-          userAnswer.id === currentQuestion.correctAnswerId
-        : // For text input, normalize and compare text
-          (() => {
+        ? userAnswer.id === currentQuestion.correctAnswerId
+        : (() => {
             const correctAnswer = currentQuestion.answers.find(
               (a) => a.id === currentQuestion.correctAnswerId
             );
@@ -141,7 +249,7 @@ const Quiz: React.FC = () => {
               ? userAnswer.id
               : userAnswer.text,
           isCorrect,
-          responseTime, // Add response time to user answer
+          responseTime,
         },
       ],
     }));
@@ -152,40 +260,68 @@ const Quiz: React.FC = () => {
 
     setQuizState((prev) => ({
       ...prev,
-      // If we've reached the end, mark quiz as completed
       ...(nextIndex >= questions.length
         ? { isQuizCompleted: true }
         : { currentQuestionIndex: nextIndex, isAnswerCorrect: null }),
     }));
   };
 
-  // Handle when timer runs out for a question
+  // Handle when the overall timer runs out
   const handleTimeUp = () => {
-    if (!currentQuestion) return;
+    // Auto-submit current question as incorrect if not answered
+    if (currentQuestion && quizState.isAnswerCorrect === null) {
+      const responseTime = (Date.now() - questionStartTime) / 1000;
+      setResponseTimes((prev) => [...prev, responseTime]);
 
-    // Add the maximum time as the response time when timer runs out
-    const responseTime = 45; // Maximum time allowed
-    setResponseTimes((prev) => [...prev, responseTime]);
+      setQuizState((prev) => ({
+        ...prev,
+        isAnswerCorrect: false,
+        userAnswers: [
+          ...prev.userAnswers,
+          {
+            questionId: currentQuestion.id,
+            answerId: "",
+            isCorrect: false,
+            responseTime,
+          },
+        ],
+      }));
+    }
+
+    // Mark remaining questions as unanswered if any
+    const remainingQuestions = questions.slice(
+      quizState.currentQuestionIndex + 1
+    );
+    const unansweredEntries = remainingQuestions.map((q) => ({
+      questionId: q.id,
+      answerId: "",
+      isCorrect: false,
+      responseTime: 0,
+    }));
 
     setQuizState((prev) => ({
       ...prev,
-      isAnswerCorrect: false,
-      userAnswers: [
-        ...prev.userAnswers,
-        {
-          questionId: currentQuestion.id,
-          answerId: "",
-          isCorrect: false,
-          responseTime, // Add the max time as response time
-        },
-      ],
+      isQuizCompleted: true,
+      userAnswers: [...prev.userAnswers, ...unansweredEntries],
     }));
   };
 
-  if (loading) {
+  // Handle closing the completion modal and redirecting
+  const handleCompletionModalClose = () => {
+    setShowCompletionModal(false);
+    window.location.href = "/pages/leaderboard";
+  };
+
+  // Show loading state while checking completion
+  if (loading || isCheckingCompletion) {
     return (
-      <div className="flex flex-col items-center justify-center p-4">
-        <div className="text-xl font-semibold">Loading quiz questions...</div>
+      <div className="flex flex-col items-center justify-center p-4 min-h-screen">
+        <CircularProgress size={40} />
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          {loading
+            ? "Loading quiz questions..."
+            : "Checking quiz completion..."}
+        </Typography>
       </div>
     );
   }
@@ -207,125 +343,177 @@ const Quiz: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col items-center w-full max-w-4xl mx-auto p-4 space-y-6">
-      {activeQuizTitle && (
-        <h1 className="text-2xl font-bold text-center mb-4">
-          {activeQuizTitle}
-        </h1>
-      )}
-
-      {!showScore ? (
-        // Quiz in progress view
-        <>
-          <ScoreBanner
-            score={quizState.score}
-            totalQuestions={questions.length}
-            currentQuestionIndex={quizState.currentQuestionIndex}
-          />
-
-          <div className="w-full flex justify-end mb-2">
-            <Timer
-              timeRemaining={timeRemaining}
-              setTimeRemaining={setTimeRemaining}
-              isActive={isTimerActive}
-              onTimeUp={handleTimeUp}
-            />
-          </div>
-
-          <QuestionCard
-            question={currentQuestion}
-            questionNumber={quizState.currentQuestionIndex + 1}
-            totalQuestions={questions.length}
-          />
-
-          <AnswerBox
-            answers={currentQuestion.answers}
-            onSubmit={handleSubmitAnswer}
-            isAnswerCorrect={quizState.isAnswerCorrect}
-            correctAnswerId={currentQuestion.correctAnswerId}
-            disabled={quizState.isAnswerCorrect !== null}
-            questionType={currentQuestion.questionType}
-          />
-
-          {quizState.isAnswerCorrect !== null && (
-            <button
-              onClick={handleNextQuestion}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-md transition duration-200 mt-4"
-            >
-              {quizState.currentQuestionIndex === questions.length - 1
-                ? "Finish Quiz"
-                : "Next Question"}
-            </button>
-          )}
-        </>
-      ) : (
-        // Results view
+    <>
+      {/* Completion Modal */}
+      <Modal
+        open={showCompletionModal}
+        onClose={() => {}} // Prevent closing by clicking outside
+        aria-labelledby="completion-modal-title"
+        aria-describedby="completion-modal-description"
+      >
         <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          gap={2}
-          sx={{ mt: 4, p: 2 }}
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 400,
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            textAlign: "center",
+          }}
         >
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            Quiz Completed!
-          </Typography>
-
-          <Paper
-            elevation={3}
-            sx={{ p: 3, textAlign: "center", width: "100%", maxWidth: 400 }}
+          <Typography
+            id="completion-modal-title"
+            variant="h5"
+            component="h2"
+            gutterBottom
           >
-            <Typography variant="h5" gutterBottom>
-              You scored {quizState.score} out of {questions.length}!
-            </Typography>
-            <Typography variant="body1" color="textSecondary">
-              Average response time:{" "}
-              {responseTimes.length > 0
-                ? (
-                    responseTimes.reduce((sum, time) => sum + time, 0) /
-                    responseTimes.length
-                  ).toFixed(2)
-                : 0}{" "}
-              seconds
-            </Typography>
-          </Paper>
-
-          {/* Score saving status */}
-          {isSavingScore && (
-            <Box display="flex" alignItems="center" gap={1}>
-              <CircularProgress size={20} />
-              <Typography variant="body1" color="textSecondary">
-                Saving your score...
-              </Typography>
-            </Box>
-          )}
-
-          {saveError && (
-            <Alert severity="error" sx={{ width: "100%", maxWidth: 400 }}>
-              {saveError}
-            </Alert>
-          )}
-
-          {/* User feedback based on auth status */}
-          {user ? (
-            <Alert severity="success" sx={{ width: "100%", maxWidth: 400 }}>
-              Your score has been recorded for the leaderboard!
-            </Alert>
-          ) : (
-            <Alert severity="info" sx={{ width: "100%", maxWidth: 400 }}>
-              Log in to save your score and appear on the leaderboard.
-            </Alert>
-          )}
-
-          <button
-            onClick={() => (window.location.href = "/pages/leaderboard")}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-md transition duration-200 mt-4"
+            Quiz Already Completed
+          </Typography>
+          <Typography id="completion-modal-description" sx={{ mt: 2, mb: 3 }}>
+            You have already completed this quiz.
+            {completedQuizData && (
+              <>
+                <br />
+                <strong>Your Score:</strong> {completedQuizData.score} /{" "}
+                {completedQuizData.totalQuestions} (
+                {completedQuizData.percentage.toFixed(1)}%)
+              </>
+            )}
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleCompletionModalClose}
+            sx={{ mt: 2 }}
           >
             View Leaderboard
-          </button>
+          </Button>
         </Box>
+      </Modal>
+
+      {canStartQuiz && (
+        <div className="flex flex-col items-center w-full max-w-4xl mx-auto p-4 space-y-6">
+          {activeQuizTitle && (
+            <h1 className="text-2xl font-bold text-center mb-4">
+              {activeQuizTitle}
+            </h1>
+          )}
+
+          {!showScore ? (
+            <>
+              <ScoreBanner
+                score={quizState.score}
+                totalQuestions={questions.length}
+                currentQuestionIndex={quizState.currentQuestionIndex}
+              />
+
+              <div className="w-full flex justify-end mb-2">
+                <Timer
+                  timeRemaining={timeRemaining}
+                  setTimeRemaining={setTimeRemaining}
+                  isActive={isTimerActive}
+                  onTimeUp={handleTimeUp}
+                  totalTime={totalQuizTime}
+                />
+              </div>
+
+              <QuestionCard
+                question={currentQuestion}
+                questionNumber={quizState.currentQuestionIndex + 1}
+                totalQuestions={questions.length}
+              />
+
+              <AnswerBox
+                answers={currentQuestion.answers}
+                onSubmit={handleSubmitAnswer}
+                isAnswerCorrect={quizState.isAnswerCorrect}
+                correctAnswerId={currentQuestion.correctAnswerId}
+                disabled={quizState.isAnswerCorrect !== null}
+                questionType={currentQuestion.questionType}
+              />
+
+              {quizState.isAnswerCorrect !== null && (
+                <button
+                  onClick={handleNextQuestion}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-md transition duration-200 mt-4"
+                >
+                  {quizState.currentQuestionIndex === questions.length - 1
+                    ? "Finish Quiz"
+                    : "Next Question"}
+                </button>
+              )}
+            </>
+          ) : (
+            <Box
+              display="flex"
+              flexDirection="column"
+              alignItems="center"
+              gap={2}
+              sx={{ mt: 4, p: 2 }}
+            >
+              <Typography variant="h4" fontWeight="bold" gutterBottom>
+                Quiz Completed!
+              </Typography>
+
+              <Paper
+                elevation={3}
+                sx={{ p: 3, textAlign: "center", width: "100%", maxWidth: 400 }}
+              >
+                <Typography variant="h5" gutterBottom>
+                  You scored {quizState.score} out of {questions.length}!
+                </Typography>
+                <Typography variant="body1" color="textSecondary">
+                  Average response time:{" "}
+                  {responseTimes.length > 0
+                    ? (
+                        responseTimes.reduce((sum, time) => sum + time, 0) /
+                        responseTimes.length
+                      ).toFixed(2)
+                    : 0}{" "}
+                  seconds
+                </Typography>
+              </Paper>
+
+              {isSavingScore && (
+                <Box display="flex" alignItems="center" gap={1}>
+                  <CircularProgress size={20} />
+                  <Typography variant="body1" color="textSecondary">
+                    Saving your score...
+                  </Typography>
+                </Box>
+              )}
+
+              {saveError && (
+                <Alert severity="error" sx={{ width: "100%", maxWidth: 400 }}>
+                  {saveError}
+                </Alert>
+              )}
+
+              {user ? (
+                <Alert severity="success" sx={{ width: "100%", maxWidth: 400 }}>
+                  Your score has been recorded for the leaderboard!
+                </Alert>
+              ) : (
+                <Alert severity="info" sx={{ width: "100%", maxWidth: 400 }}>
+                  Log in to save your score and appear on the leaderboard.
+                </Alert>
+              )}
+
+              <button
+                onClick={() => (window.location.href = "/pages/leaderboard")}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-md transition duration-200 mt-4"
+              >
+                View Leaderboard
+              </button>
+            </Box>
+          )}
+        </div>
       )}
-    </div>
+    </>
   );
 };
 

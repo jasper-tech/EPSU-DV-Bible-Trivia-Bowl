@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FaBible, FaTrophy, FaLock } from "react-icons/fa";
+import { FaBible, FaTrophy, FaLock, FaCrown } from "react-icons/fa";
 import LoadingScreen from "./loadingscreen";
 import { useFetchQuestions } from "../Data/samplequestions";
 import toast from "react-hot-toast";
@@ -73,6 +73,14 @@ export default function Dashboard({ activeQuiz, quizLoading }: DashboardProps) {
     setManualLoading(true);
   };
 
+  const handleLeaderboardTileClick = () => {
+    toast("Loading leaderboard...");
+
+    setTargetPath("/pages/leaderboard");
+    setLoadingMessage("Loading Leaderboard...");
+    setManualLoading(true);
+  };
+
   const isQuizDisabled =
     quizLoading || !activeQuiz || questionsLoading || error;
 
@@ -83,7 +91,7 @@ export default function Dashboard({ activeQuiz, quizLoading }: DashboardProps) {
   return (
     <section className="bg-white shadow p-6 rounded-lg w-full max-w-4xl mx-auto">
       <h2 className="text-2xl font-bold mb-6 text-center">Dashboard</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Quiz Tile */}
         <div
           onClick={handleQuizTileClick}
@@ -133,6 +141,18 @@ export default function Dashboard({ activeQuiz, quizLoading }: DashboardProps) {
               </span>
             </div>
           )}
+        </div>
+
+        {/* Leaderboard Tile */}
+        <div
+          onClick={handleLeaderboardTileClick}
+          className="cursor-pointer bg-yellow-100 hover:bg-yellow-200 transition-colors p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center hover:shadow-lg"
+        >
+          <FaCrown className="text-yellow-600 text-5xl mb-4" />
+          <h3 className="text-xl font-semibold text-yellow-700 mb-2">
+            Leaderboard
+          </h3>
+          <p className="text-yellow-600">See top performers!</p>
         </div>
 
         {/* Achievements Tile */}

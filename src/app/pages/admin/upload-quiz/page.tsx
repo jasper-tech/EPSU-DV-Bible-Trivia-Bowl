@@ -8,7 +8,7 @@ import {
   getDocs,
   doc,
   getDoc,
-  addDoc,
+  // addDoc,
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
@@ -23,6 +23,7 @@ interface Quiz {
   id?: string;
   quizTitle: string;
   questions: Question[];
+  quizDuration?: number; // Duration in seconds
 }
 
 const AdminQuizSelection: React.FC = () => {
@@ -35,6 +36,10 @@ const AdminQuizSelection: React.FC = () => {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState<boolean>(false);
+
+  // Timer input states
+  const [quizDurationMinutes, setQuizDurationMinutes] = useState<number>(5);
+  const [quizDurationSeconds, setQuizDurationSeconds] = useState<number>(0);
 
   // Fetch quiz titles on component mount
   useEffect(() => {
@@ -52,6 +57,7 @@ const AdminQuizSelection: React.FC = () => {
               quizTitle: quizData.quizTitle,
               id: doc.id,
               questions: [],
+              quizDuration: quizData.quizDuration || 300,
             });
           }
         });
@@ -104,7 +110,13 @@ const AdminQuizSelection: React.FC = () => {
         setSelectedQuiz({
           ...quizToFetch,
           questions: [],
+          quizDuration: quizData.quizDuration || 300,
         });
+
+        // Update timer inputs based on existing duration
+        const existingDuration = quizData.quizDuration || 300;
+        setQuizDurationMinutes(Math.floor(existingDuration / 60));
+        setQuizDurationSeconds(existingDuration % 60);
         return;
       }
 
@@ -116,10 +128,18 @@ const AdminQuizSelection: React.FC = () => {
         })
       );
 
-      setSelectedQuiz({
+      const selectedQuizData = {
         ...quizToFetch,
         questions: questionsWithIds,
-      });
+        quizDuration: quizData.quizDuration || 300,
+      };
+
+      setSelectedQuiz(selectedQuizData);
+
+      // Update timer inputs based on existing duration
+      const existingDuration = quizData.quizDuration || 300;
+      setQuizDurationMinutes(Math.floor(existingDuration / 60));
+      setQuizDurationSeconds(existingDuration % 60);
     } catch (err) {
       console.error(`Failed to fetch questions for quiz "${quizTitle}":`, err);
       toast.error(`Error fetching questions for quiz "${quizTitle}"`);
@@ -129,9 +149,32 @@ const AdminQuizSelection: React.FC = () => {
     }
   };
 
+  // Calculate total duration in seconds
+  const getTotalDurationInSeconds = (): number => {
+    return quizDurationMinutes * 60 + quizDurationSeconds;
+  };
+
+  // Handle timer input changes
+  const handleMinutesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const minutes = parseInt(event.target.value) || 0;
+    setQuizDurationMinutes(Math.max(0, Math.min(60, minutes))); // Limit between 0-60
+  };
+
+  const handleSecondsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const seconds = parseInt(event.target.value) || 0;
+    setQuizDurationSeconds(Math.max(0, Math.min(59, seconds))); // Limit between 0-59
+  };
+
   const handleUpload = async () => {
     if (!selectedQuiz || !selectedQuiz.id) {
       toast.error("No quiz selected");
+      return;
+    }
+
+    const totalDurationInSeconds = getTotalDurationInSeconds();
+
+    if (totalDurationInSeconds <= 0) {
+      toast.error("Please set a valid quiz duration (must be greater than 0)");
       return;
     }
 
@@ -147,24 +190,34 @@ const AdminQuizSelection: React.FC = () => {
         const isSelected = quizDoc.id === selectedQuiz.id;
         const quizRef = doc(db, "quizzes", quizDoc.id);
 
-        // Set activeQuiz to 1 for the selected quiz, 0 for all others
-        batchUpdates.push(
-          updateDoc(quizRef, {
-            activeQuiz: isSelected ? 1 : 0,
-          })
-        );
+        if (isSelected) {
+          // Set activeQuiz to 1 and update quiz duration for the selected quiz
+          batchUpdates.push(
+            updateDoc(quizRef, {
+              activeQuiz: 1,
+              quizDuration: totalDurationInSeconds,
+            })
+          );
+        } else {
+          // Set activeQuiz to 0 for all other quizzes
+          batchUpdates.push(
+            updateDoc(quizRef, {
+              activeQuiz: 0,
+            })
+          );
+        }
       });
 
       // Step 2: Perform all updates
       await Promise.all(batchUpdates);
 
-      // Save the uploaded quiz title to the `uploads` collection
-      await addDoc(collection(db, "uploads"), {
-        quizTitle: selectedQuiz.quizTitle,
-        uploadedAt: new Date(),
-      });
-
-      toast.success(`Quiz "${selectedQuiz.quizTitle}" is now active!`);
+      toast.success(
+        `Quiz "${
+          selectedQuiz.quizTitle
+        }" is now active with ${quizDurationMinutes}:${quizDurationSeconds
+          .toString()
+          .padStart(2, "0")} duration!`
+      );
       console.log("Active quiz updated successfully");
     } catch (err) {
       console.error("Failed to update active quiz:", err);
@@ -173,6 +226,7 @@ const AdminQuizSelection: React.FC = () => {
       setIsUploading(false);
     }
   };
+
   return (
     <div className="p-6">
       <button
@@ -206,12 +260,69 @@ const AdminQuizSelection: React.FC = () => {
             </select>
           </div>
 
+          {/* Quiz Duration Input */}
+          {selectedQuiz && (
+            <div className="mb-6 p-4 border rounded-md bg-gray-50">
+              <label className="block mb-3 font-medium text-lg">
+                Quiz Duration:
+              </label>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    min="0"
+                    max="60"
+                    value={quizDurationMinutes}
+                    onChange={handleMinutesChange}
+                    className="w-20 px-3 py-2 border rounded-md text-center"
+                    disabled={isUploading}
+                  />
+                  <span className="text-gray-600 font-medium">minutes</span>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={quizDurationSeconds}
+                    onChange={handleSecondsChange}
+                    className="w-20 px-3 py-2 border rounded-md text-center"
+                    disabled={isUploading}
+                  />
+                  <span className="text-gray-600 font-medium">seconds</span>
+                </div>
+              </div>
+
+              <div className="mt-2 text-sm text-gray-600">
+                Total duration:{" "}
+                <span className="font-semibold">
+                  {getTotalDurationInSeconds()} seconds
+                </span>
+                {getTotalDurationInSeconds() > 0 && (
+                  <span className="ml-2">
+                    ({quizDurationMinutes}:
+                    {quizDurationSeconds.toString().padStart(2, "0")})
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Upload button with loading state */}
           <button
             onClick={handleUpload}
-            disabled={!selectedQuiz || isUploading || isLoadingQuestions}
+            disabled={
+              !selectedQuiz ||
+              isUploading ||
+              isLoadingQuestions ||
+              getTotalDurationInSeconds() <= 0
+            }
             className={`px-4 py-2 rounded-md flex items-center justify-center min-w-[100px] ${
-              selectedQuiz && !isUploading && !isLoadingQuestions
+              selectedQuiz &&
+              !isUploading &&
+              !isLoadingQuestions &&
+              getTotalDurationInSeconds() > 0
                 ? "bg-blue-600 text-white hover:bg-blue-700"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
@@ -294,7 +405,7 @@ const AdminQuizSelection: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <p>This quiz doesnt have any questions yet.</p>
+                <p>This quiz doesn&apos;t have any questions yet.</p>
               )}
             </div>
           )}

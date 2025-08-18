@@ -31,29 +31,42 @@ const Leaderboard: React.FC = () => {
   const [isSpeedRace, setIsSpeedRace] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchLatestUploadedQuiz = async () => {
+    const fetchLatestCompletedQuiz = async () => {
       try {
-        const uploadsQuery = query(
-          collection(db, "uploads"),
-          orderBy("uploadedAt", "desc"),
+        const resultsQuery = query(
+          collection(db, "quizResults"),
+          orderBy("timestamp", "desc"),
           limit(1)
         );
 
-        const snapshot = await getDocs(uploadsQuery);
+        const snapshot = await getDocs(resultsQuery);
 
         if (!snapshot.empty) {
-          const latestUpload = snapshot.docs[0].data();
-          setQuizTitle(latestUpload.quizTitle);
+          const latestResult = snapshot.docs[0].data();
+          setQuizTitle(latestResult.quizTitle);
         } else {
-          setQuizTitle("No quiz uploaded");
+          // Fallback to latest uploaded quiz if no results exist
+          const uploadsQuery = query(
+            collection(db, "uploads"),
+            orderBy("uploadedAt", "desc"),
+            limit(1)
+          );
+
+          const uploadSnapshot = await getDocs(uploadsQuery);
+          if (!uploadSnapshot.empty) {
+            const latestUpload = uploadSnapshot.docs[0].data();
+            setQuizTitle(latestUpload.quizTitle);
+          } else {
+            setQuizTitle("No quiz available");
+          }
         }
       } catch (err) {
-        console.error("Error fetching latest uploaded quiz:", err);
-        setError("Failed to fetch the latest uploaded quiz.");
+        console.error("Error fetching latest completed quiz:", err);
+        setError("Failed to fetch the latest completed quiz.");
       }
     };
 
-    fetchLatestUploadedQuiz();
+    fetchLatestCompletedQuiz();
   }, []);
 
   // Update isSpeedRace when quizTitle changes

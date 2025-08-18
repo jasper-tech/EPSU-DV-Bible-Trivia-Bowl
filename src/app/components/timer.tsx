@@ -1,12 +1,19 @@
-// src/components/Timer.tsx
 import React, { useEffect, useRef } from "react";
-import { TimerProps } from "../types/quiz";
+
+interface TimerProps {
+  timeRemaining: number;
+  setTimeRemaining: React.Dispatch<React.SetStateAction<number>>;
+  isActive: boolean;
+  onTimeUp: () => void;
+  totalTime?: number;
+}
 
 const Timer: React.FC<TimerProps> = ({
   timeRemaining,
   setTimeRemaining,
   isActive,
   onTimeUp,
+  totalTime = 300,
 }) => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -19,17 +26,17 @@ const Timer: React.FC<TimerProps> = ({
       .padStart(2, "0")}`;
   };
 
-  // Calculate percentage for progress bar
+  // Calculate percentage for progress bar using total time
   const getTimerPercentage = (): number => {
-    // We don't know the original time, so we can't calculate percentage directly
-    // Assuming 100% of timer is a reasonable default max time (e.g. 60 seconds)
-    return (timeRemaining / 60) * 100;
+    return (timeRemaining / totalTime) * 100;
   };
 
   // Get appropriate color based on time remaining
   const getTimerColor = (): string => {
-    if (timeRemaining <= 10) return "bg-red-500"; // Urgent: less than 10 seconds
-    if (timeRemaining <= 30) return "bg-yellow-500"; // Warning: less than 30 seconds
+    const percentageLeft = (timeRemaining / totalTime) * 100;
+
+    if (percentageLeft <= 15) return "bg-red-500"; // Urgent: less than 15% time left
+    if (percentageLeft <= 30) return "bg-yellow-500"; // Warning: less than 30% time left
     return "bg-green-500"; // Plenty of time
   };
 
@@ -60,6 +67,7 @@ const Timer: React.FC<TimerProps> = ({
         clearInterval(timerRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, setTimeRemaining, onTimeUp]);
 
   return (
@@ -77,7 +85,7 @@ const Timer: React.FC<TimerProps> = ({
       </div>
 
       {/* Optional: Text indicator */}
-      {timeRemaining <= 10 && (
+      {timeRemaining <= totalTime * 0.15 && (
         <span className="text-xs text-red-500 font-medium mt-1">
           Time running out!
         </span>

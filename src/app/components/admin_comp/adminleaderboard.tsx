@@ -16,7 +16,7 @@ import {
 import { db } from "@/app/lib/firebase";
 import toast from "react-hot-toast";
 import {
-  FaTrashAlt,
+  // FaTrashAlt,
   FaDownload,
   FaFilter,
   FaTimes,
@@ -422,9 +422,9 @@ const AdminLeaderboard: React.FC<AdminLeaderboardProps> = ({ backToAdmin }) => {
                 >
                   Date {getSortIcon("date")}
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {/* <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
-                </th>
+                </th> */}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -474,7 +474,7 @@ const AdminLeaderboard: React.FC<AdminLeaderboardProps> = ({ backToAdmin }) => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(entry.timestamp)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => {
                           setEntryToDelete(entry.id);
@@ -484,7 +484,7 @@ const AdminLeaderboard: React.FC<AdminLeaderboardProps> = ({ backToAdmin }) => {
                       >
                         <FaTrashAlt />
                       </button>
-                    </td>
+                    </td> */}
                   </tr>
                 );
               })}
