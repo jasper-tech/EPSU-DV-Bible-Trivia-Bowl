@@ -49,7 +49,7 @@ const Quiz: React.FC = () => {
   useEffect(() => {
     setTimeRemaining(45);
     setIsTimerActive(true);
-    // Reset the start time when moving to a new question
+    // Reset the start time
     setQuestionStartTime(Date.now());
   }, [quizState.currentQuestionIndex]);
 

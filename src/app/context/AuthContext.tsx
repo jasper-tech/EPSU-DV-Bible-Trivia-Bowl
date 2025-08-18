@@ -182,8 +182,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await firebaseSignOut(auth);
       setUser(null);
       setIsAdmin(false);
-      toast.success("Logged out successfully", { id: toastId });
-      router.push("/");
+      setLoading(false);
+      setIsNavigating(false);
+      toast.success("Signed out successfully", { id: toastId });
+      router.push("/pages/login");
     } catch (err: unknown) {
       let errorMessage = "Logout failed.";
       if (err instanceof Error) {

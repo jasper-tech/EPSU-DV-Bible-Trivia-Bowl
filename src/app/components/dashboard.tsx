@@ -56,9 +56,7 @@ export default function Dashboard() {
           <h3 className="text-xl font-semibold text-blue-700 mb-2">
             Bible Trivia Bowl
           </h3>
-          <p className="text-blue-600">
-            Test your Bible knowledge and earn rewards!
-          </p>
+          <p className="text-blue-600">Take the quiz!</p>
         </div>
 
         {/* Achievements Tile */}

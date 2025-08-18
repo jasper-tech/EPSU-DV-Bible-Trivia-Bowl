@@ -1,26 +1,21 @@
 "use client";
 
-import { signOut } from "firebase/auth";
-import { auth } from "../lib/firebase";
-import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
-import ExitToAppIcon from "@mui/icons-material/ExitToApp";
+import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
+import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 
 export default function Header({ username }: { username: string }) {
-  const router = useRouter();
-
+  const { logout } = useAuth();
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const handleLogout = async () => {
+    setIsSigningOut(true);
     try {
-      await signOut(auth);
-      toast.success("Signed out successfully");
-      router.push("/pages/login");
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        toast.error(err.message || "Sign out failed.");
-      } else {
-        toast.error("An unexpected error occurred.");
-      }
+      await logout();
+    } catch (err) {
+      console.error("Logout failed:", err);
+    } finally {
+      setIsSigningOut(false);
     }
   };
 
@@ -35,10 +30,11 @@ export default function Header({ username }: { username: string }) {
 
       <button
         onClick={handleLogout}
-        className="flex items-center justify-center bg-red-600 text-white px-5 py-2 rounded-full hover:bg-red-700 transition-all duration-200 ease-in-out transform hover:scale-105 text-sm sm:text-base"
+        disabled={isSigningOut}
+        className="flex items-center justify-center bg-red-600 text-white px-5 py-2 rounded-full hover:bg-red-700 transition-all duration-200 ease-in-out transform hover:scale-105 text-sm sm:text-base disabled:opacity-70"
       >
         <ExitToAppIcon className="mr-2 text-base sm:text-lg" />
-        Sign Out
+        {isSigningOut ? "Signing Out..." : "Sign Out"}
       </button>
     </header>
   );
