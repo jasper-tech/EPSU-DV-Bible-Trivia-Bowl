@@ -13,6 +13,7 @@ import {
   FaHome,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 import { CircularProgress, Tabs, Tab, Box, Badge, Modal } from "@mui/material";
 
 import { auth, db } from "../lib/firebase";
@@ -26,7 +27,6 @@ import {
   QuerySnapshot,
   DocumentData,
 } from "firebase/firestore";
-import { signOut } from "firebase/auth";
 
 import QuestionsTab from "./admin_comp/questiontab";
 import QuizzesTab from "./admin_comp/quizzestab";
@@ -51,6 +51,7 @@ const AdminHeader = () => {
   const [viewedQuiz, setViewedQuiz] = useState<Quiz | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const router = useRouter();
+  const { logout } = useAuth();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -149,17 +150,6 @@ const AdminHeader = () => {
 
     return () => unsubscribe();
   }, [quizzes]);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      toast.success("Signed out successfully.");
-      router.push("/pages/login");
-    } catch (error) {
-      console.error("Sign out error:", error);
-      toast.error("Failed to sign out.");
-    }
-  };
 
   const handleUploadsClick = () => {
     setModalOpen(true);
@@ -273,7 +263,7 @@ const AdminHeader = () => {
           </div>
         </div>
 
-        {/* Right: Role + Logout */}
+        {/* Right: Role + Signout */}
         <div className="flex items-center justify-between w-full sm:w-auto gap-2">
           <p className="text-sm text-gray-400">
             {loading ? "Loading role..." : `Quizmaster | ${userData?.role}`}
@@ -295,11 +285,11 @@ const AdminHeader = () => {
             <span className="ml-2 text-sm">Uploads</span>
           </button>
           <button
-            onClick={handleSignOut}
-            className="flex items-center text-red-400 hover:text-red-600 text-sm"
+            onClick={logout}
+            className="flex items-center text-red-400 hover:text-red-600 text-sm disabled:opacity-50"
           >
             <FaSignOutAlt className="mr-1" />
-            Sign Out
+            {"Sign Out"}
           </button>
         </div>
       </header>

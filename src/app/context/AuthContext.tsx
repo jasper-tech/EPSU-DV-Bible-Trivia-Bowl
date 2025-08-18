@@ -144,7 +144,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           } else {
             router.push("/pages/profile");
           }
-        }, 500);
+        }, 100);
       } else {
         toast.error("User data not found.", { id: toastId });
         setError("User data not found");

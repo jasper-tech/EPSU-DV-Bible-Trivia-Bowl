@@ -1,12 +1,18 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FaBible, FaTrophy } from "react-icons/fa";
+import { FaBible, FaTrophy, FaLock } from "react-icons/fa";
 import LoadingScreen from "./loadingscreen";
 import { useFetchQuestions } from "../Data/samplequestions";
 import toast from "react-hot-toast";
 
-export default function Dashboard() {
+interface DashboardProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  activeQuiz: any;
+  quizLoading: boolean;
+}
+
+export default function Dashboard({ activeQuiz, quizLoading }: DashboardProps) {
   const [loadingMessage, setLoadingMessage] = useState("");
   const [manualLoading, setManualLoading] = useState(false);
   const [targetPath, setTargetPath] = useState<string | null>(null);
@@ -16,7 +22,7 @@ export default function Dashboard() {
     if (manualLoading && loadingMessage && targetPath) {
       const timeout = setTimeout(() => {
         router.push(targetPath);
-      }, 300);
+      }, 100);
 
       return () => clearTimeout(timeout);
     }
@@ -24,20 +30,50 @@ export default function Dashboard() {
 
   const { loading: questionsLoading, error } = useFetchQuestions();
 
-  const handleTileClick = (path: string, message: string) => {
-    if (questionsLoading) {
-      toast("Please wait, quiz is still loading...");
-      return;
-    }
-    if (error) {
-      toast.error("Quiz not available at the moment.");
+  const handleQuizTileClick = () => {
+    // Check if quiz monitoring is still loading
+    if (quizLoading) {
+      toast.loading("Checking quiz availability...");
       return;
     }
 
-    setTargetPath(path);
-    setLoadingMessage(message);
+    // Check if there's an active quiz
+    if (!activeQuiz) {
+      toast.error(
+        "No quiz is currently active. Please wait for an announcement!"
+      );
+      return;
+    }
+
+    // Check if questions are still loading
+    if (questionsLoading) {
+      toast.loading("Please wait, Bible quiz is still loading...");
+      return;
+    }
+
+    // Check for errors
+    if (error) {
+      toast.error("Bible quiz not available at the moment.");
+      return;
+    }
+
+    // All checks passed, proceed to quiz
+    toast.success("Launching quiz...");
+    setTargetPath("/pages/quiz");
+    setLoadingMessage("Preparing Bible Quiz...");
     setManualLoading(true);
   };
+
+  const handleAchievementsTileClick = () => {
+    toast("Loading your achievements...");
+
+    setTargetPath("/pages/achievements");
+    setLoadingMessage("Loading Your Achievements...");
+    setManualLoading(true);
+  };
+
+  const isQuizDisabled =
+    quizLoading || !activeQuiz || questionsLoading || error;
 
   if (manualLoading) {
     return <LoadingScreen message={loadingMessage} />;
@@ -49,21 +85,58 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Quiz Tile */}
         <div
-          onClick={() => handleTileClick("/pages/quiz", "Preparing Quiz...")}
-          className="cursor-pointer bg-blue-100 hover:bg-blue-200 transition-colors p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center hover:shadow-lg"
+          onClick={isQuizDisabled ? undefined : handleQuizTileClick}
+          className={`
+            ${
+              isQuizDisabled
+                ? "cursor-not-allowed bg-gray-100 opacity-60"
+                : "cursor-pointer bg-blue-100 hover:bg-blue-200 hover:shadow-lg"
+            } 
+            transition-all duration-200 p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center relative
+          `}
         >
-          <FaBible className="text-blue-600 text-5xl mb-4" />
-          <h3 className="text-xl font-semibold text-blue-700 mb-2">
+          {isQuizDisabled && (
+            <div className="absolute top-2 right-2">
+              <FaLock className="text-gray-400 text-lg" />
+            </div>
+          )}
+
+          <FaBible
+            className={`${
+              isQuizDisabled ? "text-gray-400" : "text-blue-600"
+            } text-5xl mb-4`}
+          />
+          <h3
+            className={`text-xl font-semibold mb-2 ${
+              isQuizDisabled ? "text-gray-500" : "text-blue-700"
+            }`}
+          >
             Bible Trivia Bowl
           </h3>
-          <p className="text-blue-600">Take the quiz!</p>
+          <p className={isQuizDisabled ? "text-gray-400" : "text-blue-600"}>
+            {quizLoading
+              ? "Checking availability..."
+              : !activeQuiz
+              ? "No active quiz"
+              : questionsLoading
+              ? "Loading quiz..."
+              : error
+              ? "Quiz unavailable"
+              : "Take the quiz!"}
+          </p>
+
+          {activeQuiz && !isQuizDisabled && (
+            <div className="mt-2">
+              <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                🔴 LIVE
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Achievements Tile */}
         <div
-          onClick={() =>
-            handleTileClick("/pages/achievements", "Loading Achievements...")
-          }
+          onClick={handleAchievementsTileClick}
           className="cursor-pointer bg-green-100 hover:bg-green-200 transition-colors p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center hover:shadow-lg"
         >
           <FaTrophy className="text-green-600 text-5xl mb-4" />
