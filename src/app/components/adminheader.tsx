@@ -36,6 +36,12 @@ import ViewQuizDialog from "./viewquizdialog";
 
 import { UserData, Question, Quiz } from "../types/quiz";
 
+interface UploadData {
+  quizTitle: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  createdAt: any;
+}
+
 const AdminHeader = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +49,7 @@ const AdminHeader = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [quizzesLoading, setQuizzesLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [filteredUploads, setFilteredUploads] = useState<string[]>([]);
+  const [mostRecentUpload, setMostRecentUpload] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -126,21 +132,36 @@ const AdminHeader = () => {
     return () => unsubscribe();
   }, []);
 
+  // Fetch most recent upload
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, "uploads"),
       (snapshot: QuerySnapshot<DocumentData>) => {
-        const uploadedQuizzes = snapshot.docs.map(
-          (doc) => doc.data().quizTitle
-        );
+        const uploads: UploadData[] = snapshot.docs.map((doc) => ({
+          quizTitle: doc.data().quizTitle,
+          createdAt: doc.data().createdAt,
+        }));
 
         // Filter uploads based on activeQuiz in quizzes collection
-        const filtered = uploadedQuizzes.filter((uploadTitle) =>
+        const activeUploads = uploads.filter((upload) =>
           quizzes.some(
-            (quiz) => quiz.quizTitle === uploadTitle && quiz.activeQuiz === 1
+            (quiz) =>
+              quiz.quizTitle === upload.quizTitle && quiz.activeQuiz === 1
           )
         );
-        setFilteredUploads(filtered);
+
+        if (activeUploads.length > 0) {
+          // Sort by createdAt timestamp and get the most recent one
+          const sortedUploads = activeUploads.sort((a, b) => {
+            const timeA = a.createdAt?.toDate?.() || new Date(0);
+            const timeB = b.createdAt?.toDate?.() || new Date(0);
+            return timeB.getTime() - timeA.getTime();
+          });
+
+          setMostRecentUpload(sortedUploads[0].quizTitle);
+        } else {
+          setMostRecentUpload(null);
+        }
       },
       (error) => {
         console.error("Error fetching uploads:", error);
@@ -213,10 +234,14 @@ const AdminHeader = () => {
     setActiveTab(newValue);
   };
 
-  const handleUnupload = async (quizTitle: string) => {
+  const handleUnupload = async () => {
+    if (!mostRecentUpload) return;
+
     try {
       // Find the quiz document with matching title
-      const matchingQuiz = quizzes.find((quiz) => quiz.quizTitle === quizTitle);
+      const matchingQuiz = quizzes.find(
+        (quiz) => quiz.quizTitle === mostRecentUpload
+      );
 
       if (!matchingQuiz) {
         toast.error("Quiz not found");
@@ -279,7 +304,7 @@ const AdminHeader = () => {
             onClick={handleUploadsClick}
             className="relative flex items-center text-blue-400 hover:text-blue-600"
           >
-            <Badge badgeContent={filteredUploads.length} color="primary">
+            <Badge badgeContent={mostRecentUpload ? 1 : 0} color="primary">
               <FaCloudUploadAlt size={20} />
             </Badge>
             <span className="ml-2 text-sm">Uploads</span>
@@ -368,6 +393,8 @@ const AdminHeader = () => {
           </div>
         </div>
       </div>
+
+      {/* Updated Modal for Most Recent Upload */}
       <Modal open={modalOpen} onClose={handleCloseModal}>
         <Box
           className="bg-white rounded-lg shadow-lg p-6"
@@ -381,30 +408,32 @@ const AdminHeader = () => {
             overflowY: "auto",
           }}
         >
-          <h2 className="text-lg font-bold mb-4">Uploaded Quizzes</h2>
-          {filteredUploads.length > 0 ? (
-            <ul className="space-y-4">
-              {filteredUploads.map((quizTitle, index) => (
-                <li
-                  key={index}
-                  className="flex items-center justify-between p-2 border rounded"
+          <h2 className="text-lg font-bold mb-4">Most Recent Active Quiz</h2>
+          {mostRecentUpload ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50">
+                <div>
+                  <span className="text-gray-700 font-medium">
+                    {mostRecentUpload}
+                  </span>
+                  <p className="text-sm text-gray-500 mt-1">Currently Active</p>
+                </div>
+                <button
+                  onClick={handleUnupload}
+                  className="ml-4 bg-red-500 text-white px-4 py-2 rounded text-sm hover:bg-red-600 transition-all duration-200"
                 >
-                  <span className="text-gray-700">{quizTitle}</span>
-                  <button
-                    onClick={() => handleUnupload(quizTitle)}
-                    className="ml-4 bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-all duration-200"
-                  >
-                    Unupload
-                  </button>
-                </li>
-              ))}
-            </ul>
+                  Unupload
+                </button>
+              </div>
+            </div>
           ) : (
-            <p className="text-gray-500">No active quizzes uploaded yet.</p>
+            <p className="text-gray-500 text-center py-8">
+              No active quiz uploaded yet.
+            </p>
           )}
           <button
             onClick={handleCloseModal}
-            className="mt-6 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-all duration-200"
+            className="mt-6 w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-all duration-200"
           >
             Close
           </button>
