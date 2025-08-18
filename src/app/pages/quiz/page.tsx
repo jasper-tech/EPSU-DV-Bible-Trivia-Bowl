@@ -85,15 +85,15 @@ const Quiz: React.FC = () => {
         })
       );
 
-      // Save score with all required information including response time
+      // Save score with all required information
       await saveQuizScore(
         user.uid,
-        userEmailOrName, // This will be used as userDisplayName and potentially matched with users collection
+        userEmailOrName, //  userDisplayName and potentially matched with users collection
         activeQuizTitle,
         quizState.score,
         questions.length,
         enhancedUserAnswers,
-        parseFloat(averageResponseTime.toString()) // Add average response time
+        parseFloat(averageResponseTime.toString()) // average response time
       );
     } catch (error) {
       console.error("Error saving score:", error);
