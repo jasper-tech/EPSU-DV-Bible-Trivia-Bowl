@@ -85,14 +85,14 @@ export default function Dashboard({ activeQuiz, quizLoading }: DashboardProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Quiz Tile */}
         <div
-          onClick={isQuizDisabled ? undefined : handleQuizTileClick}
+          onClick={handleQuizTileClick}
           className={`
+            cursor-pointer transition-all duration-200 p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center relative
             ${
               isQuizDisabled
-                ? "cursor-not-allowed bg-gray-100 opacity-60"
-                : "cursor-pointer bg-blue-100 hover:bg-blue-200 hover:shadow-lg"
-            } 
-            transition-all duration-200 p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center relative
+                ? "bg-gray-100 opacity-60 hover:bg-gray-200"
+                : "bg-blue-100 hover:bg-blue-200 hover:shadow-lg"
+            }
           `}
         >
           {isQuizDisabled && (
@@ -103,17 +103,17 @@ export default function Dashboard({ activeQuiz, quizLoading }: DashboardProps) {
 
           <FaBible
             className={`${
-              isQuizDisabled ? "text-gray-400" : "text-blue-600"
+              isQuizDisabled ? "text-gray-600" : "text-blue-600"
             } text-5xl mb-4`}
           />
           <h3
             className={`text-xl font-semibold mb-2 ${
-              isQuizDisabled ? "text-gray-500" : "text-blue-700"
+              isQuizDisabled ? "text-gray-600" : "text-blue-700"
             }`}
           >
             Bible Trivia Bowl
           </h3>
-          <p className={isQuizDisabled ? "text-gray-400" : "text-blue-600"}>
+          <p className={isQuizDisabled ? "text-gray-600" : "text-blue-600"}>
             {quizLoading
               ? "Checking availability..."
               : !activeQuiz

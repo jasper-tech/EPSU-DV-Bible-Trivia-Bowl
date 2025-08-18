@@ -1,6 +1,6 @@
 "use client";
-
-import { useEffect, useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useState, useCallback, useRef } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../../lib/firebase";
 import {
@@ -22,39 +22,82 @@ import { FaBell, FaExclamationTriangle } from "react-icons/fa";
 export default function ProfilePage() {
   const [username, setUsername] = useState<string>("Loading...");
   const [loading, setLoading] = useState(true);
-  const [activeQuiz, setActiveQuiz] = useState(null);
+  const [activeQuiz, setActiveQuiz] = useState<any>(null);
   const [quizLoading, setQuizLoading] = useState(true);
+  const [dashboardKey, setDashboardKey] = useState(0);
+
+  const previousQuizState = useRef<any>(null);
 
   const router = useRouter();
 
-  // Monitor active quizzes in real-time
+  // Monitor active quizzes in real-time with enhanced debugging and force refresh
   useEffect(() => {
+    console.log("Setting up quiz monitoring...");
+
     const q = query(collection(db, "quizzes"), where("activeQuiz", "==", 1));
 
     const unsubscribeQuiz = onSnapshot(
       q,
       (querySnapshot) => {
+        console.log("Quiz snapshot received:", {
+          empty: querySnapshot.empty,
+          size: querySnapshot.size,
+          docs: querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            data: doc.data(),
+          })),
+        });
+
+        const wasQuizActive = previousQuizState.current !== null;
+
         if (!querySnapshot.empty) {
           // Get the first active quiz
           const activeQuizDoc = querySnapshot.docs[0];
-          setActiveQuiz({
+          const newActiveQuiz = {
             id: activeQuizDoc.id,
             ...activeQuizDoc.data(),
-          });
+          };
+
+          console.log("Setting active quiz:", newActiveQuiz);
+          setActiveQuiz(newActiveQuiz);
+          previousQuizState.current = newActiveQuiz;
+
+          // Force Dashboard component reload if quiz just became available
+          if (!wasQuizActive) {
+            console.log(
+              "Quiz just became available - reloading Dashboard component"
+            );
+            setTimeout(() => {
+              console.log("Executing Dashboard component reload for new quiz");
+              setDashboardKey((prev) => prev + 1);
+            }, 500);
+          }
         } else {
+          console.log("No active quiz found, setting to null");
           setActiveQuiz(null);
+          previousQuizState.current = null;
         }
         setQuizLoading(false);
       },
       (error) => {
         console.error("Error monitoring active quiz:", error);
         setActiveQuiz(null);
+        previousQuizState.current = null;
         setQuizLoading(false);
       }
     );
 
-    return () => unsubscribeQuiz();
-  }, []);
+    // Cleanup function
+    return () => {
+      console.log("Cleaning up quiz monitoring...");
+      unsubscribeQuiz();
+    };
+  }, []); // Removed activeQuiz dependency since we're using ref
+
+  // Add effect to log state changes
+  // useEffect(() => {
+  //   console.log("Quiz state changed:", { activeQuiz, quizLoading });
+  // }, [activeQuiz, quizLoading]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -85,7 +128,8 @@ export default function ProfilePage() {
     return () => unsubscribe();
   }, [router]);
 
-  const QuizPrompt = () => {
+  // Memoize QuizPrompt to prevent unnecessary re-renders
+  const QuizPrompt = useCallback(() => {
     if (quizLoading) {
       return (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-center justify-center">
@@ -105,8 +149,8 @@ export default function ProfilePage() {
                 🎉 Quiz Available Now!
               </h3>
               <p className="text-green-700">
-                {activeQuiz.title || "Bible Trivia Quiz"} is now live! Click the
-                Quiz tile below to participate.
+                {activeQuiz.Quiztitle || "Bible Trivia Quiz"} is now live! Click
+                the Quiz tile below to participate.
               </p>
               {activeQuiz.description && (
                 <p className="text-green-600 text-sm mt-1">
@@ -126,14 +170,14 @@ export default function ProfilePage() {
           <div>
             <h3 className="text-yellow-800 font-semibold">No Active Quiz</h3>
             <p className="text-yellow-700">
-              There's no quiz available at the moment. Check back later or wait
-              for an announcement!
+              There&apos;s no quiz available at the moment. Check back later or
+              wait for an announcement!
             </p>
           </div>
         </div>
       </div>
     );
-  };
+  }, [quizLoading, activeQuiz]);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
@@ -152,7 +196,11 @@ export default function ProfilePage() {
         ) : (
           <main className="max-w-4xl mx-auto">
             <QuizPrompt />
-            <Dashboard activeQuiz={activeQuiz} quizLoading={quizLoading} />
+            <Dashboard
+              key={dashboardKey}
+              activeQuiz={activeQuiz}
+              quizLoading={quizLoading}
+            />
           </main>
         )}
       </div>

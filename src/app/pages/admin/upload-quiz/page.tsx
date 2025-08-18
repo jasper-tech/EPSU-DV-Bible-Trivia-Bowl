@@ -51,7 +51,7 @@ const AdminQuizSelection: React.FC = () => {
             fetchedQuizzes.push({
               quizTitle: quizData.quizTitle,
               id: doc.id,
-              questions: [], // Empty array initially
+              questions: [],
             });
           }
         });
