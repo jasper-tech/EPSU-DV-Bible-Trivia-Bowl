@@ -18,11 +18,13 @@ interface UserScoreEntry {
 
 const UserAchievements: React.FC = () => {
   const [userScores, setUserScores] = useState<UserScoreEntry[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [initialLoading, setInitialLoading] = useState<boolean>(true);
+  const [scoresLoading, setScoresLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [quizTitle, setQuizTitle] = useState<string>("");
   const [availableQuizzes, setAvailableQuizzes] = useState<string[]>([]);
   const [completedQuizzes, setCompletedQuizzes] = useState<string[]>([]);
+  const [quizzesChecked, setQuizzesChecked] = useState<boolean>(false);
   const { user } = useAuth();
 
   // Fetch all available quizzes
@@ -33,62 +35,77 @@ const UserAchievements: React.FC = () => {
         setAvailableQuizzes(quizzes);
       } catch (err) {
         console.error("Error fetching available quizzes:", err);
+        setError("Failed to load available quizzes.");
+        setInitialLoading(false);
       }
     };
 
-    fetchAvailableQuizzes();
-  }, []);
+    if (user) {
+      fetchAvailableQuizzes();
+    } else {
+      setInitialLoading(false);
+    }
+  }, [user]);
 
+  // Check which quizzes the user has completed
   useEffect(() => {
     const fetchUserQuizzes = async () => {
-      if (!user || availableQuizzes.length === 0) return;
+      if (!user || availableQuizzes.length === 0) {
+        if (availableQuizzes.length === 0 && user) {
+          // Still waiting for available quizzes to load
+          return;
+        }
+        setInitialLoading(false);
+        return;
+      }
 
       try {
-        setLoading(true);
-
         const userCompletedQuizzes = [];
 
         for (const quiz of availableQuizzes) {
-          const leaderboardData = await getQuizLeaderboard(quiz);
-          // Cast the leaderboard data to the correct type
-          const typedLeaderboardData = leaderboardData as UserScoreEntry[];
+          try {
+            const leaderboardData = await getQuizLeaderboard(quiz);
+            // Cast the leaderboard data to the correct type
+            const typedLeaderboardData = leaderboardData as UserScoreEntry[];
 
-          const hasUserEntries = typedLeaderboardData.some(
-            (entry) => entry.userId === user.uid
-          );
+            const hasUserEntries = typedLeaderboardData.some(
+              (entry) => entry.userId === user.uid
+            );
 
-          if (hasUserEntries) {
-            userCompletedQuizzes.push(quiz);
+            if (hasUserEntries) {
+              userCompletedQuizzes.push(quiz);
+            }
+          } catch (quizError) {
+            console.error(`Error checking quiz ${quiz}:`, quizError);
+            // Continue checking other quizzes even if one fails
           }
         }
 
         setCompletedQuizzes(userCompletedQuizzes);
+        setQuizzesChecked(true);
 
         // Set the first completed quiz as default if none selected
-        if (
-          userCompletedQuizzes.length > 0 &&
-          (!quizTitle || !userCompletedQuizzes.includes(quizTitle))
-        ) {
+        if (userCompletedQuizzes.length > 0) {
           setQuizTitle(userCompletedQuizzes[0]);
         }
       } catch (err) {
         console.error("Error fetching user quizzes:", err);
         setError("Failed to load your quiz data. Please try again.");
       } finally {
-        setLoading(false);
+        setInitialLoading(false);
       }
     };
 
     fetchUserQuizzes();
-  }, [user, availableQuizzes, quizTitle]);
+  }, [user, availableQuizzes]);
 
   // Fetch user's scores for the selected quiz
   useEffect(() => {
     const fetchUserScores = async () => {
-      if (!user || !quizTitle) return;
+      if (!user || !quizTitle || !quizzesChecked) return;
 
       try {
-        setLoading(true);
+        setScoresLoading(true);
         setError(null);
 
         // Get all scores for this quiz
@@ -106,12 +123,12 @@ const UserAchievements: React.FC = () => {
         console.error("Error fetching user scores:", err);
         setError("Failed to load your scores. Please try again.");
       } finally {
-        setLoading(false);
+        setScoresLoading(false);
       }
     };
 
     fetchUserScores();
-  }, [user, quizTitle]);
+  }, [user, quizTitle, quizzesChecked]);
 
   // Function to format the timestamp
   const formatDate = (timestamp: any) => {
@@ -158,19 +175,29 @@ const UserAchievements: React.FC = () => {
         Your Quiz Achievements
       </h1>
 
-      {loading && completedQuizzes.length === 0 ? (
+      {initialLoading ? (
         <div className="text-center py-8">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
           <p className="mt-2">Loading your quizzes...</p>
         </div>
+      ) : error ? (
+        <div className="text-center py-8 bg-white shadow-lg rounded-lg p-6">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-200"
+          >
+            Try Again
+          </button>
+        </div>
       ) : completedQuizzes.length === 0 ? (
         <div className="text-center py-8 bg-white shadow-lg rounded-lg p-6">
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-4">
             You haven&apos;t taken any quizzes yet.
-          </p>{" "}
+          </p>
           <button
             onClick={() => (window.location.href = "/pages/quiz")}
-            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-200"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-200"
           >
             Take a Quiz Now
           </button>
@@ -195,13 +222,11 @@ const UserAchievements: React.FC = () => {
             </select>
           </div>
 
-          {loading ? (
+          {scoresLoading ? (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
               <p className="mt-2">Loading your scores...</p>
             </div>
-          ) : error ? (
-            <div className="text-red-500 text-center py-8">{error}</div>
           ) : (
             <>
               {/* Achievement Summary */}

@@ -44,6 +44,7 @@ export interface Quiz {
   questions: QuizQuestion[];
   responses: any[];
   activeQuiz: number;
+  quizDuration: number;
 }
 
 // Props for the QuestionCard component

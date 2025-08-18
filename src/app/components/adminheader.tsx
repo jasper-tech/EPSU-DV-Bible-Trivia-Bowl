@@ -36,12 +36,6 @@ import ViewQuizDialog from "./viewquizdialog";
 
 import { UserData, Question, Quiz } from "../types/quiz";
 
-interface UploadData {
-  quizTitle: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  createdAt: any;
-}
-
 const AdminHeader = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +43,7 @@ const AdminHeader = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [quizzesLoading, setQuizzesLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [mostRecentUpload, setMostRecentUpload] = useState<string | null>(null);
+  const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -110,7 +104,7 @@ const AdminHeader = () => {
     return () => unsubscribe();
   }, []);
 
-  // Fetch quizzes
+  // Fetch quizzes and determine active quiz
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, "quizzes"),
@@ -119,7 +113,15 @@ const AdminHeader = () => {
           id: doc.id,
           ...(doc.data() as Omit<Quiz, "id">),
         }));
+
         setQuizzes(loadedQuizzes);
+
+        // Find the currently active quiz
+        const currentActiveQuiz = loadedQuizzes.find(
+          (quiz) => quiz.activeQuiz === 1
+        );
+        setActiveQuiz(currentActiveQuiz || null);
+
         setQuizzesLoading(false);
       },
       (error) => {
@@ -131,46 +133,6 @@ const AdminHeader = () => {
 
     return () => unsubscribe();
   }, []);
-
-  // Fetch most recent upload
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, "uploads"),
-      (snapshot: QuerySnapshot<DocumentData>) => {
-        const uploads: UploadData[] = snapshot.docs.map((doc) => ({
-          quizTitle: doc.data().quizTitle,
-          createdAt: doc.data().createdAt,
-        }));
-
-        // Filter uploads based on activeQuiz in quizzes collection
-        const activeUploads = uploads.filter((upload) =>
-          quizzes.some(
-            (quiz) =>
-              quiz.quizTitle === upload.quizTitle && quiz.activeQuiz === 1
-          )
-        );
-
-        if (activeUploads.length > 0) {
-          // Sort by createdAt timestamp and get the most recent one
-          const sortedUploads = activeUploads.sort((a, b) => {
-            const timeA = a.createdAt?.toDate?.() || new Date(0);
-            const timeB = b.createdAt?.toDate?.() || new Date(0);
-            return timeB.getTime() - timeA.getTime();
-          });
-
-          setMostRecentUpload(sortedUploads[0].quizTitle);
-        } else {
-          setMostRecentUpload(null);
-        }
-      },
-      (error) => {
-        console.error("Error fetching uploads:", error);
-        toast.error("Failed to load uploads.");
-      }
-    );
-
-    return () => unsubscribe();
-  }, [quizzes]);
 
   const handleUploadsClick = () => {
     setModalOpen(true);
@@ -235,21 +197,11 @@ const AdminHeader = () => {
   };
 
   const handleUnupload = async () => {
-    if (!mostRecentUpload) return;
+    if (!activeQuiz) return;
 
     try {
-      // Find the quiz document with matching title
-      const matchingQuiz = quizzes.find(
-        (quiz) => quiz.quizTitle === mostRecentUpload
-      );
-
-      if (!matchingQuiz) {
-        toast.error("Quiz not found");
-        return;
-      }
-
       // Update the quiz document to set activeQuiz to 0
-      await updateDoc(doc(db, "quizzes", matchingQuiz.id), {
+      await updateDoc(doc(db, "quizzes", activeQuiz.id), {
         activeQuiz: 0,
       });
 
@@ -304,10 +256,10 @@ const AdminHeader = () => {
             onClick={handleUploadsClick}
             className="relative flex items-center text-blue-400 hover:text-blue-600"
           >
-            <Badge badgeContent={mostRecentUpload ? 1 : 0} color="primary">
+            <Badge badgeContent={activeQuiz ? 1 : 0} color="primary">
               <FaCloudUploadAlt size={20} />
             </Badge>
-            <span className="ml-2 text-sm">Uploads</span>
+            <span className="ml-2 text-sm">Active Quiz</span>
           </button>
           <button
             onClick={logout}
@@ -394,7 +346,7 @@ const AdminHeader = () => {
         </div>
       </div>
 
-      {/* Updated Modal for Most Recent Upload */}
+      {/* Updated Modal for Active Quiz */}
       <Modal open={modalOpen} onClose={handleCloseModal}>
         <Box
           className="bg-white rounded-lg shadow-lg p-6"
@@ -408,15 +360,23 @@ const AdminHeader = () => {
             overflowY: "auto",
           }}
         >
-          <h2 className="text-lg font-bold mb-4">Most Recent Active Quiz</h2>
-          {mostRecentUpload ? (
+          <h2 className="text-lg font-bold mb-4">Currently Active Quiz</h2>
+          {activeQuiz ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50">
                 <div>
                   <span className="text-gray-700 font-medium">
-                    {mostRecentUpload}
+                    {activeQuiz.quizTitle}
                   </span>
-                  <p className="text-sm text-gray-500 mt-1">Currently Active</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Duration: {Math.floor((activeQuiz.quizDuration || 0) / 60)}:
+                    {((activeQuiz.quizDuration || 0) % 60)
+                      .toString()
+                      .padStart(2, "0")}
+                  </p>
+                  <p className="text-sm text-green-600 font-medium">
+                    Currently Active
+                  </p>
                 </div>
                 <button
                   onClick={handleUnupload}
@@ -428,7 +388,7 @@ const AdminHeader = () => {
             </div>
           ) : (
             <p className="text-gray-500 text-center py-8">
-              No active quiz uploaded yet.
+              No quiz is currently active.
             </p>
           )}
           <button
