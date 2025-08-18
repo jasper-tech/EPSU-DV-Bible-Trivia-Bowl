@@ -15,9 +15,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
 
-  const { login, error, loading, user } = useAuth();
+  const { login, error, loading, user, isNavigating } = useAuth();
 
   useEffect(() => {
     if (user && isNavigating) {
@@ -32,7 +31,6 @@ export default function LoginPage() {
       return;
     }
 
-    setIsNavigating(true);
     await login(email, password);
   };
 
@@ -141,7 +139,7 @@ export default function LoginPage() {
               </div>
               <div className="text-sm">
                 <Link
-                  href="/pages/forgot-password"
+                  href="/pages/forgot_password"
                   className="font-medium text-blue-600 hover:text-blue-800"
                 >
                   Forgot your password?

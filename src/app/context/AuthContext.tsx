@@ -108,8 +108,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setLoading(true);
     setIsNavigating(true);
 
+    const toastId = toast.loading("Signing you in...");
+
     try {
-      const toastId = toast.loading("Signing you in...");
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
@@ -152,14 +153,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (err: unknown) {
       let errorMessage = "SignIn failed.";
       if (err instanceof Error) {
-        errorMessage = err.message;
+        if (err.message.includes("auth/invalid-credential")) {
+          errorMessage = "Invalid email or password. Please try again.";
+        } else if (err.message.includes("auth/user-not-found")) {
+          errorMessage = "No account found with this email.";
+        } else if (err.message.includes("auth/wrong-password")) {
+          errorMessage = "Incorrect password. Please try again.";
+        } else if (err.message.includes("auth/too-many-requests")) {
+          errorMessage = "Too many failed attempts. Please try again later.";
+        } else {
+          errorMessage = err.message;
+        }
       }
 
-      toast.error(errorMessage);
+      toast.error(errorMessage, { id: toastId });
       setError(errorMessage);
       setIsNavigating(false);
-    } finally {
       setLoading(false);
+    } finally {
     }
   };
 
