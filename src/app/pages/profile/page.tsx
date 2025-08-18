@@ -128,7 +128,7 @@ export default function ProfilePage() {
     return () => unsubscribe();
   }, [router]);
 
-  // Memoize QuizPrompt to prevent unnecessary re-renders
+  // Memoize QuizPrompt
   const QuizPrompt = useCallback(() => {
     if (quizLoading) {
       return (
@@ -149,7 +149,7 @@ export default function ProfilePage() {
                 🎉 Quiz Available Now!
               </h3>
               <p className="text-green-700">
-                {activeQuiz.Quiztitle || "Bible Trivia Quiz"} is now live! Click
+                {activeQuiz.quizTitle || "Bible Trivia Quiz"} is now live! Click
                 the Quiz tile below to participate.
               </p>
               {activeQuiz.description && (

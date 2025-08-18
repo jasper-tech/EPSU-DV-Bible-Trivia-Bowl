@@ -22,10 +22,11 @@ export default function Dashboard({ activeQuiz, quizLoading }: DashboardProps) {
     if (manualLoading && loadingMessage && targetPath) {
       const timeout = setTimeout(() => {
         router.push(targetPath);
-      }, 100);
+      }, 2000);
 
       return () => clearTimeout(timeout);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manualLoading, loadingMessage, targetPath]);
 
   const { loading: questionsLoading, error } = useFetchQuestions();
