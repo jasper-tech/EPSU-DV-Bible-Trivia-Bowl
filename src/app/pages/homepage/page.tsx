@@ -139,8 +139,8 @@ export default function SignupPage() {
               <MenuBookIcon style={{ fontSize: 128, color: "white" }} />
             </div>
             <p className="text-blue-100 text-lg">
-              Join thousands of players exploring biblical knowledge in a fun,
-              engaging way.
+              Join other players exploring biblical knowledge in a fun, engaging
+              way.
             </p>
           </div>
         </div>
@@ -294,7 +294,7 @@ export default function SignupPage() {
                 href="/pages/login"
                 className="text-blue-600 hover:text-blue-800 font-medium"
               >
-                Log in
+                Sign in
               </Link>
             </p>
           </div>
