@@ -15,7 +15,7 @@ export interface UserData {
 export interface Question {
   id: string;
   text: string;
-  questionType: "multiple-choice" | "text";
+  questionType: "multiple-choice" | "text-input";
   answers: Answer[];
   correctAnswerId: string;
   explanation?: string;
@@ -61,7 +61,7 @@ export interface AnswerBoxProps {
   isAnswerCorrect: boolean | null;
   correctAnswerId: string;
   disabled: boolean;
-  questionType: "multiple-choice" | "text";
+  questionType: "multiple-choice" | "text-input";
 }
 
 // Props for the Timer component
@@ -97,6 +97,7 @@ export interface UserQuizResult {
   questionId: string;
   answerId: string;
   isCorrect: boolean;
+  responseTime: number;
 }
 
 export interface QuizState {

@@ -17,6 +17,7 @@ import ScoreBanner from "../../components/scorebanner";
 import AnswerBox from "../../components/answerbox";
 import Timer from "../../components/timer";
 import QuestionCard from "../../components/questioncard";
+import QuizReview from "../../components/quizreview";
 import { useAuth } from "@/app/context/AuthContext";
 import { saveQuizScore } from "@/app/lib/quizservice";
 import { collection, getDocs, query, where } from "firebase/firestore";
@@ -45,10 +46,11 @@ const Quiz: React.FC = () => {
   });
 
   // State for quiz duration (will be fetched from database)
-  const [totalQuizTime, setTotalQuizTime] = useState<number>(300); // Default 5 minutes
+  const [totalQuizTime, setTotalQuizTime] = useState<number>(300);
   const [timeRemaining, setTimeRemaining] = useState<number>(300);
   const [isTimerActive, setIsTimerActive] = useState<boolean>(false);
   const [showScore, setShowScore] = useState<boolean>(false);
+  const [showReview, setShowReview] = useState<boolean>(false);
   const [isSavingScore, setIsSavingScore] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -126,7 +128,7 @@ const Quiz: React.FC = () => {
 
           if (activeQuiz) {
             const quizData = activeQuiz.data();
-            const duration = quizData.quizDuration || 300; // Default 5 minutes
+            const duration = quizData.quizDuration || 300;
             setTotalQuizTime(duration);
             setTimeRemaining(duration);
           } else {
@@ -151,10 +153,9 @@ const Quiz: React.FC = () => {
     fetchQuizDuration();
   }, [questions.length, isTimerActive, canStartQuiz]);
 
-  // Handle quiz completion
   useEffect(() => {
     if (quizState.isQuizCompleted) {
-      setIsTimerActive(false); // Stop timer when quiz completes
+      setIsTimerActive(false);
       setShowScore(true);
       saveScoreToFirestore();
     }
@@ -167,7 +168,14 @@ const Quiz: React.FC = () => {
     }
   }, [quizState.currentQuestionIndex, canStartQuiz]);
 
-  // Save quiz results to Firestore database
+  // Auto-advance to next question after answering
+  useEffect(() => {
+    if (quizState.isAnswerCorrect !== null) {
+      handleNextQuestion();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizState.isAnswerCorrect]);
+
   const saveScoreToFirestore = async () => {
     if (!user || !activeQuizTitle) {
       setSaveError("User not logged in or quiz title missing");
@@ -312,6 +320,16 @@ const Quiz: React.FC = () => {
     window.location.href = "/pages/leaderboard";
   };
 
+  // Handle showing the review
+  const handleShowReview = () => {
+    setShowReview(true);
+  };
+
+  // Handle going back from review to results
+  const handleBackToResults = () => {
+    setShowReview(false);
+  };
+
   // Show loading state while checking completion
   if (loading || isCheckingCompletion) {
     return (
@@ -338,6 +356,37 @@ const Quiz: React.FC = () => {
         >
           Go Back
         </a>
+      </div>
+    );
+  }
+
+  // Show review if requested
+  if (showReview && quizState.isQuizCompleted) {
+    const averageResponseTime =
+      responseTimes.length > 0
+        ? responseTimes.reduce((sum, time) => sum + time, 0) /
+          responseTimes.length
+        : 0;
+
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-4 max-w-4xl mx-auto px-4">
+          <button
+            onClick={handleBackToResults}
+            className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md transition duration-200"
+          >
+            ← Back to Results
+          </button>
+        </div>
+
+        <QuizReview
+          questions={questions}
+          userAnswers={quizState.userAnswers}
+          score={quizState.score}
+          totalQuestions={questions.length}
+          quizTitle={activeQuizTitle ?? undefined}
+          averageResponseTime={averageResponseTime}
+        />
       </div>
     );
   }
@@ -435,17 +484,6 @@ const Quiz: React.FC = () => {
                 disabled={quizState.isAnswerCorrect !== null}
                 questionType={currentQuestion.questionType}
               />
-
-              {quizState.isAnswerCorrect !== null && (
-                <button
-                  onClick={handleNextQuestion}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-md transition duration-200 mt-4"
-                >
-                  {quizState.currentQuestionIndex === questions.length - 1
-                    ? "Finish Quiz"
-                    : "Next Question"}
-                </button>
-              )}
             </>
           ) : (
             <Box
@@ -472,18 +510,20 @@ const Quiz: React.FC = () => {
                     ? (
                         responseTimes.reduce((sum, time) => sum + time, 0) /
                         responseTimes.length
-                      ).toFixed(2)
-                    : 0}{" "}
-                  seconds
+                      ).toFixed(1)
+                    : 0}
+                  s
+                </Typography>
+                <Typography variant="h6" sx={{ mt: 2, color: "primary.main" }}>
+                  {((quizState.score / questions.length) * 100).toFixed(1)}%
                 </Typography>
               </Paper>
 
+              {/* Save Status */}
               {isSavingScore && (
                 <Box display="flex" alignItems="center" gap={1}>
                   <CircularProgress size={20} />
-                  <Typography variant="body1" color="textSecondary">
-                    Saving your score...
-                  </Typography>
+                  <Typography variant="body2">Saving your score...</Typography>
                 </Box>
               )}
 
@@ -493,22 +533,41 @@ const Quiz: React.FC = () => {
                 </Alert>
               )}
 
-              {user ? (
+              {!isSavingScore && !saveError && (
                 <Alert severity="success" sx={{ width: "100%", maxWidth: 400 }}>
-                  Your score has been recorded for the leaderboard!
-                </Alert>
-              ) : (
-                <Alert severity="info" sx={{ width: "100%", maxWidth: 400 }}>
-                  Log in to save your score and appear on the leaderboard.
+                  Your score has been saved successfully!
                 </Alert>
               )}
 
-              <button
-                onClick={() => (window.location.href = "/pages/leaderboard")}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-md transition duration-200 mt-4"
-              >
-                View Leaderboard
-              </button>
+              {/* Action Buttons */}
+              <Box display="flex" gap={2} sx={{ mt: 3 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleShowReview}
+                  disabled={isSavingScore}
+                >
+                  Review Answers
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={() => (window.location.href = "/pages/leaderboard")}
+                  disabled={isSavingScore}
+                >
+                  View Leaderboard
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  onClick={() => (window.location.href = "/pages/profile")}
+                  disabled={isSavingScore}
+                >
+                  Back to Profile
+                </Button>
+              </Box>
             </Box>
           )}
         </div>
