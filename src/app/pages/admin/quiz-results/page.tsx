@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/app/lib/firebase";
 import { useAuth } from "@/app/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface QuizTitleInfo {
   title: string;
@@ -34,6 +35,7 @@ const ClearQuizResults: React.FC = () => {
   } | null>(null);
   const [deleteAllMode, setDeleteAllMode] = useState(false);
   const { user } = useAuth();
+  const router = useRouter();
 
   // Fetch quiz titles and their info on component mount
   useEffect(() => {
@@ -505,10 +507,10 @@ const ClearQuizResults: React.FC = () => {
           {/* Back Button */}
           <div className="text-center pt-6 border-t">
             <button
-              onClick={() => (window.location.href = "/pages/admin")}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-6 rounded-lg transition duration-200"
+              onClick={() => router.back()}
+              className="mb-6 text-blue-600 hover:underline flex items-center"
             >
-              Back to home
+              ← Back to home
             </button>
           </div>
         </div>
