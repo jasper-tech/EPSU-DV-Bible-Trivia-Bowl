@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FaBible, FaTrophy, FaLock, FaCrown } from "react-icons/fa";
+import { FaBible, FaLock, FaCrown } from "react-icons/fa";
 import LoadingScreen from "./loadingscreen";
 import { useFetchQuestions } from "../Data/samplequestions";
 import toast from "react-hot-toast";
@@ -65,13 +65,13 @@ export default function Dashboard({ activeQuiz, quizLoading }: DashboardProps) {
     setManualLoading(true);
   };
 
-  const handleAchievementsTileClick = () => {
-    toast("Loading your achievements...");
+  // const handleAchievementsTileClick = () => {
+  //   toast("Loading your achievements...");
 
-    setTargetPath("/pages/achievements");
-    setLoadingMessage("Loading Your Achievements...");
-    setManualLoading(true);
-  };
+  //   setTargetPath("/pages/achievements");
+  //   setLoadingMessage("Loading Your Achievements...");
+  //   setManualLoading(true);
+  // };
 
   const handleLeaderboardTileClick = () => {
     toast("Loading leaderboard...");
@@ -156,7 +156,7 @@ export default function Dashboard({ activeQuiz, quizLoading }: DashboardProps) {
         </div>
 
         {/* Achievements Tile */}
-        <div
+        {/* <div
           onClick={handleAchievementsTileClick}
           className="cursor-pointer bg-green-100 hover:bg-green-200 transition-colors p-6 rounded-lg shadow-md flex flex-col items-center justify-center text-center hover:shadow-lg"
         >
@@ -165,7 +165,7 @@ export default function Dashboard({ activeQuiz, quizLoading }: DashboardProps) {
             Achievements
           </h3>
           <p className="text-green-600">View your achievements!</p>
-        </div>
+        </div> */}
       </div>
     </section>
   );
