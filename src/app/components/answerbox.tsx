@@ -48,7 +48,7 @@ const AnswerBox: React.FC<AnswerBoxProps> = ({
   // Determine if the submit button should be disabled
   const isSubmitDisabled =
     disabled ||
-    (questionType === "text" && !userInput.trim()) ||
+    (questionType === "text-input" && !userInput.trim()) ||
     (questionType === "multiple-choice" && !selectedAnswerId);
 
   // Check for valid multiple-choice setup
