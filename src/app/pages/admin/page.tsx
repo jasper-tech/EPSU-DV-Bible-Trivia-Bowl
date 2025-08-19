@@ -10,6 +10,7 @@ import {
   UploadFileOutlined,
   History,
   EmojiEvents,
+  Bookmark,
 } from "@mui/icons-material";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import clsx from "clsx";
@@ -50,6 +51,12 @@ const tiles = [
     href: "/pages/admin/quiz-leaderboard",
     icon: EmojiEvents,
     color: "text-green-500 hover:text-green-600",
+  },
+  {
+    label: "Quiz Results",
+    href: "/pages/admin/quiz-results",
+    icon: Bookmark,
+    color: "text-gray-500 hover:text-gray-600",
   },
 ];
 
