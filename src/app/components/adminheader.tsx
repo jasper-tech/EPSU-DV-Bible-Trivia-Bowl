@@ -11,6 +11,7 @@ import {
   FaClipboardList,
   FaCloudUploadAlt,
   FaHome,
+  FaCrown,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
@@ -215,16 +216,16 @@ const AdminHeader = () => {
   return (
     <>
       {/* Header */}
-      <header className="w-full bg-gray-900 text-white px-4 py-3 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0 relative">
+      <header className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0 relative">
         {/* Left: Hamburger + User */}
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-white bg-gray-700 p-2 rounded"
+            className="text-white bg-white/20 p-2.5 rounded-lg backdrop-blur-sm hover:bg-white/30 transition-all duration-200"
           >
-            <FaBars />
+            <FaBars className="text-lg" />
           </button>
-          {/* <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white">
+          {/* <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/30 bg-white/20 backdrop-blur-sm">
             <Image
               src={userData?.image || "/default-profile.png"}
               alt="Profile"
@@ -233,68 +234,77 @@ const AdminHeader = () => {
               className="object-cover"
             />
           </div> */}
-          <div>
-            <span className="font-semibold text-base">
-              {loading ? "Loading..." : userData?.name}
-            </span>
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+              <FaCrown className="text-yellow-300 text-lg" />
+            </div>
+            <div>
+              <span className="font-semibold text-base">
+                {loading ? "Loading..." : userData?.name}
+              </span>
+              <p className="text-sm text-white/80">
+                {loading ? "Loading role..." : `Quizmaster | ${userData?.role}`}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Right: Role + Signout */}
-        <div className="flex items-center justify-between w-full sm:w-auto gap-2">
-          <p className="text-sm text-gray-400">
-            {loading ? "Loading role..." : `Quizmaster | ${userData?.role}`}
-          </p>
+        {/* Right: Navigation + Signout */}
+        <div className="flex items-center justify-end sm:justify-between w-full sm:w-auto gap-4">
           <button
             onClick={() => router.push("/pages/admin")}
-            className="flex items-center text-green-400 hover:text-green-600"
+            className="flex items-center text-white/90 hover:text-white bg-white/10 px-4 py-2 rounded-lg backdrop-blur-sm transition-all duration-200 hover:bg-white/20"
           >
-            <FaHome size={20} />
-            <span className="ml-2 text-sm">Home</span>
+            <FaHome className="mr-2" />
+            <span className="text-sm">Home</span>
           </button>
           <button
             onClick={handleUploadsClick}
-            className="relative flex items-center text-blue-400 hover:text-blue-600"
+            className="relative flex items-center text-white/90 hover:text-white bg-white/10 px-4 py-2 rounded-lg backdrop-blur-sm transition-all duration-200 hover:bg-white/20"
           >
             <Badge badgeContent={activeQuiz ? 1 : 0} color="primary">
-              <FaCloudUploadAlt size={20} />
+              <FaCloudUploadAlt className="mr-2" />
             </Badge>
-            <span className="ml-2 text-sm">Active Quiz</span>
+            <span className="text-sm">Active Quiz</span>
           </button>
           <button
             onClick={logout}
-            className="flex items-center text-red-400 hover:text-red-600 text-sm disabled:opacity-50"
+            className="flex items-center bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 disabled:opacity-50 shadow-sm"
           >
-            <FaSignOutAlt className="mr-1" />
-            {"Sign Out"}
+            <FaSignOutAlt className="mr-2" />
+            <span className="text-sm">Sign Out</span>
           </button>
         </div>
       </header>
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full bg-gray-800 text-white w-72 z-50 flex flex-col transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-gray-800 to-gray-900 text-white w-80 z-50 flex flex-col transform transition-transform duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        } shadow-2xl`}
       >
-        <div className="flex justify-between items-center p-4 border-b border-gray-700">
+        <div className="flex justify-between items-center p-6 border-b border-gray-700 bg-gray-800">
           <h2 className="text-xl font-bold">Admin Panel</h2>
-          <button onClick={() => setSidebarOpen(false)} className="text-white">
+          <button 
+            onClick={() => setSidebarOpen(false)} 
+            className="text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+          >
             <FaTimes />
           </button>
         </div>
 
-        <Box sx={{ width: "100%" }}>
+        <Box sx={{ width: "100%", bgcolor: "rgba(31, 41, 55, 0.8)", backdropFilter: "blur(10px)" }}>
           <Tabs
             value={activeTab}
             onChange={handleChangeTab}
             variant="fullWidth"
             sx={{
               borderBottom: 1,
-              borderColor: "divider",
+              borderColor: "rgba(255, 255, 255, 0.1)",
               "& .MuiTab-root": {
-                color: "white",
+                color: "rgba(255, 255, 255, 0.7)",
                 opacity: 0.7,
+                py: 2,
                 "&.Mui-selected": {
                   color: "white",
                   opacity: 1,
@@ -302,6 +312,7 @@ const AdminHeader = () => {
               },
               "& .MuiTabs-indicator": {
                 backgroundColor: "white",
+                height: 3,
               },
             }}
           >
@@ -310,12 +321,12 @@ const AdminHeader = () => {
           </Tabs>
         </Box>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-b from-gray-800/90 to-gray-900/90 backdrop-blur-sm">
           {/* Questions Tab */}
           <div role="tabpanel" hidden={activeTab !== 0}>
             {loading ? (
               <div className="flex justify-center items-center h-40">
-                <CircularProgress color="inherit" />
+                <CircularProgress sx={{ color: "white" }} />
               </div>
             ) : (
               <QuestionsTab
@@ -332,7 +343,7 @@ const AdminHeader = () => {
           <div role="tabpanel" hidden={activeTab !== 1}>
             {quizzesLoading ? (
               <div className="flex justify-center items-center h-40">
-                <CircularProgress color="inherit" />
+                <CircularProgress sx={{ color: "white" }} />
               </div>
             ) : (
               <QuizzesTab
@@ -349,7 +360,7 @@ const AdminHeader = () => {
       {/* Updated Modal for Active Quiz */}
       <Modal open={modalOpen} onClose={handleCloseModal}>
         <Box
-          className="bg-white rounded-lg shadow-lg p-6"
+          className="bg-white rounded-xl shadow-2xl p-6 border border-gray-200"
           sx={{
             position: "absolute",
             top: "50%",
@@ -358,42 +369,46 @@ const AdminHeader = () => {
             width: 400,
             maxHeight: "80vh",
             overflowY: "auto",
+            outline: "none",
           }}
         >
-          <h2 className="text-lg font-bold mb-4">Currently Active Quiz</h2>
+          <h2 className="text-xl font-bold mb-4 text-gray-800 border-b pb-3">
+            Currently Active Quiz
+          </h2>
           {activeQuiz ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50">
+              <div className="flex items-center justify-between p-4 border rounded-xl bg-green-50 border-green-200">
                 <div>
-                  <span className="text-gray-700 font-medium">
+                  <span className="text-gray-800 font-semibold">
                     {activeQuiz.quizTitle}
                   </span>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-600 mt-1">
                     Duration: {Math.floor((activeQuiz.quizDuration || 0) / 60)}:
                     {((activeQuiz.quizDuration || 0) % 60)
                       .toString()
                       .padStart(2, "0")}
                   </p>
-                  <p className="text-sm text-green-600 font-medium">
+                  <p className="text-sm text-green-600 font-medium mt-2">
+                    <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
                     Currently Active
                   </p>
                 </div>
                 <button
                   onClick={handleUnupload}
-                  className="ml-4 bg-red-500 text-white px-4 py-2 rounded text-sm hover:bg-red-600 transition-all duration-200"
+                  className="ml-4 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg text-sm hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-sm"
                 >
                   Unupload
                 </button>
               </div>
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-8">
+            <p className="text-gray-500 text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
               No quiz is currently active.
             </p>
           )}
           <button
             onClick={handleCloseModal}
-            className="mt-6 w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-all duration-200"
+            className="mt-6 w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm"
           >
             Close
           </button>
