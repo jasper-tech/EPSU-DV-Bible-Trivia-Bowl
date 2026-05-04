@@ -45,7 +45,6 @@ const Quiz: React.FC = () => {
     userAnswers: [],
   });
 
-  // State for quiz duration (will be fetched from database)
   const [totalQuizTime, setTotalQuizTime] = useState<number>(300);
   const [timeRemaining, setTimeRemaining] = useState<number>(300);
   const [isTimerActive, setIsTimerActive] = useState<boolean>(false);
@@ -54,7 +53,6 @@ const Quiz: React.FC = () => {
   const [isSavingScore, setIsSavingScore] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // States for completion check
   const [isCheckingCompletion, setIsCheckingCompletion] =
     useState<boolean>(false);
   const [showCompletionModal, setShowCompletionModal] =
@@ -63,12 +61,17 @@ const Quiz: React.FC = () => {
     useState<CompletedQuizResult | null>(null);
   const [canStartQuiz, setCanStartQuiz] = useState<boolean>(false);
 
-  // Track question response times
   const [responseTimes, setResponseTimes] = useState<number[]>([]);
-  // Track when the question was first shown to the user
   const [questionStartTime, setQuestionStartTime] = useState<number>(
     Date.now()
   );
+
+  // Derived average response time — computed once and reused everywhere
+  const averageResponseTime =
+    responseTimes.length > 0
+      ? responseTimes.reduce((sum, time) => sum + time, 0) /
+        responseTimes.length
+      : 0;
 
   const currentQuestion =
     questions.length > 0 ? questions[quizState.currentQuestionIndex] : null;
@@ -84,7 +87,6 @@ const Quiz: React.FC = () => {
       try {
         setIsCheckingCompletion(true);
 
-        // Query quizResults collection for this user and quiz
         const completionQuery = query(
           collection(db, "quizResults"),
           where("userId", "==", user.uid),
@@ -94,18 +96,15 @@ const Quiz: React.FC = () => {
         const snapshot = await getDocs(completionQuery);
 
         if (!snapshot.empty) {
-          // User has already completed this quiz
           const completedQuiz = snapshot.docs[0].data() as CompletedQuizResult;
           setCompletedQuizData(completedQuiz);
           setShowCompletionModal(true);
           setCanStartQuiz(false);
         } else {
-          // User hasn't completed this quiz yet, can proceed
           setCanStartQuiz(true);
         }
       } catch (error) {
         console.error("Error checking quiz completion:", error);
-        // On error, allow user to proceed (fail open)
         setCanStartQuiz(true);
       } finally {
         setIsCheckingCompletion(false);
@@ -115,12 +114,11 @@ const Quiz: React.FC = () => {
     checkQuizCompletion();
   }, [user, activeQuizTitle]);
 
-  // Start timer when questions are loaded and fetch quiz duration
+  // Fetch quiz duration and start timer
   useEffect(() => {
     const fetchQuizDuration = async () => {
       if (questions.length > 0 && !isTimerActive && canStartQuiz) {
         try {
-          // Get the active quiz to fetch its duration
           const quizzesSnapshot = await getDocs(collection(db, "quizzes"));
           const activeQuiz = quizzesSnapshot.docs.find(
             (doc) => doc.data().activeQuiz === 1
@@ -132,7 +130,6 @@ const Quiz: React.FC = () => {
             setTotalQuizTime(duration);
             setTimeRemaining(duration);
           } else {
-            // Fallback: calculate based on questions if no active quiz found
             const calculatedTime = questions.length * 45;
             setTotalQuizTime(calculatedTime);
             setTimeRemaining(calculatedTime);
@@ -141,7 +138,6 @@ const Quiz: React.FC = () => {
           setIsTimerActive(true);
         } catch (error) {
           console.error("Error fetching quiz duration:", error);
-          // Fallback to calculated time
           const calculatedTime = questions.length * 45;
           setTotalQuizTime(calculatedTime);
           setTimeRemaining(calculatedTime);
@@ -168,7 +164,6 @@ const Quiz: React.FC = () => {
     }
   }, [quizState.currentQuestionIndex, canStartQuiz]);
 
-  // Auto-advance to next question after answering
   useEffect(() => {
     if (quizState.isAnswerCorrect !== null) {
       handleNextQuestion();
@@ -188,17 +183,6 @@ const Quiz: React.FC = () => {
 
       const userEmailOrName = user.email || "Anonymous User";
 
-      // Calculate average response time (in seconds)
-      const totalResponseTime = responseTimes.reduce(
-        (sum, time) => sum + time,
-        0
-      );
-      const averageResponseTime =
-        responseTimes.length > 0
-          ? (totalResponseTime / responseTimes.length).toFixed(2)
-          : 0;
-
-      // Enhanced userAnswers with response times
       const enhancedUserAnswers = quizState.userAnswers.map(
         (answer, index) => ({
           ...answer,
@@ -213,7 +197,7 @@ const Quiz: React.FC = () => {
         quizState.score,
         questions.length,
         enhancedUserAnswers,
-        parseFloat(averageResponseTime.toString())
+        parseFloat(averageResponseTime.toFixed(2))
       );
     } catch (error) {
       console.error("Error saving score:", error);
@@ -226,11 +210,9 @@ const Quiz: React.FC = () => {
   const handleSubmitAnswer = (userAnswer: Answer) => {
     if (!currentQuestion) return;
 
-    // Calculate response time for this question (in seconds)
     const responseTime = (Date.now() - questionStartTime) / 1000;
     setResponseTimes((prev) => [...prev, responseTime]);
 
-    // Determine if answer is correct based on question type
     const isCorrect =
       currentQuestion.questionType === "multiple-choice"
         ? userAnswer.id === currentQuestion.correctAnswerId
@@ -243,7 +225,6 @@ const Quiz: React.FC = () => {
             return normalizedUserInput === normalizedCorrect;
           })();
 
-    // Update quiz state with the user's answer and score
     setQuizState((prev) => ({
       ...prev,
       isAnswerCorrect: isCorrect,
@@ -274,9 +255,7 @@ const Quiz: React.FC = () => {
     }));
   };
 
-  // Handle when the overall timer runs out
   const handleTimeUp = () => {
-    // Auto-submit current question as incorrect if not answered
     if (currentQuestion && quizState.isAnswerCorrect === null) {
       const responseTime = (Date.now() - questionStartTime) / 1000;
       setResponseTimes((prev) => [...prev, responseTime]);
@@ -296,7 +275,6 @@ const Quiz: React.FC = () => {
       }));
     }
 
-    // Mark remaining questions as unanswered if any
     const remainingQuestions = questions.slice(
       quizState.currentQuestionIndex + 1
     );
@@ -314,23 +292,21 @@ const Quiz: React.FC = () => {
     }));
   };
 
-  // Handle closing the completion modal and redirecting
   const handleCompletionModalClose = () => {
     setShowCompletionModal(false);
     window.location.href = "/pages/leaderboard";
   };
 
-  // Handle showing the review
   const handleShowReview = () => {
     setShowReview(true);
+    // Scroll to top so PDF capture starts from the beginning
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Handle going back from review to results
   const handleBackToResults = () => {
     setShowReview(false);
   };
 
-  // Show loading state while checking completion
   if (loading || isCheckingCompletion) {
     return (
       <div className="flex flex-col items-center justify-center p-4 min-h-screen">
@@ -360,17 +336,20 @@ const Quiz: React.FC = () => {
     );
   }
 
-  // Show review if requested
+  // Show review if requested — rendered in a clean full-page container for PDF capture
   if (showReview && quizState.isQuizCompleted) {
-    const averageResponseTime =
-      responseTimes.length > 0
-        ? responseTimes.reduce((sum, time) => sum + time, 0) /
-          responseTimes.length
-        : 0;
-
     return (
-      <div>
-        <div className="flex items-center justify-between mb-4 max-w-4xl mx-auto px-4">
+      // Outer wrapper: white background, no overflow clipping so html2canvas
+      // can measure the full scroll height of the review content
+      <div
+        style={{
+          backgroundColor: "#ffffff",
+          minHeight: "100vh",
+          overflowX: "hidden",
+        }}
+      >
+        {/* Back button sits outside the captured area */}
+        <div className="flex items-center justify-between mb-4 max-w-4xl mx-auto px-4 pt-4">
           <button
             onClick={handleBackToResults}
             className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md transition duration-200"
@@ -396,7 +375,7 @@ const Quiz: React.FC = () => {
       {/* Completion Modal */}
       <Modal
         open={showCompletionModal}
-        onClose={() => {}} // Prevent closing by clicking outside
+        onClose={() => {}}
         aria-labelledby="completion-modal-title"
         aria-describedby="completion-modal-description"
       >
@@ -505,21 +484,13 @@ const Quiz: React.FC = () => {
                   You scored {quizState.score} out of {questions.length}!
                 </Typography>
                 <Typography variant="body1" color="textSecondary">
-                  Average response time:{" "}
-                  {responseTimes.length > 0
-                    ? (
-                        responseTimes.reduce((sum, time) => sum + time, 0) /
-                        responseTimes.length
-                      ).toFixed(1)
-                    : 0}
-                  s
+                  Average response time: {averageResponseTime.toFixed(1)}s
                 </Typography>
                 <Typography variant="h6" sx={{ mt: 2, color: "primary.main" }}>
                   {((quizState.score / questions.length) * 100).toFixed(1)}%
                 </Typography>
               </Paper>
 
-              {/* Save Status */}
               {isSavingScore && (
                 <Box display="flex" alignItems="center" gap={1}>
                   <CircularProgress size={20} />
@@ -539,7 +510,6 @@ const Quiz: React.FC = () => {
                 </Alert>
               )}
 
-              {/* Action Buttons */}
               <Box display="flex" gap={2} sx={{ mt: 3 }}>
                 <Button
                   variant="contained"

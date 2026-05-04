@@ -17,7 +17,7 @@ import Dashboard from "@/app/components/dashboard";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import GitHubIcon from "@mui/icons-material/GitHub";
-import { FaBell, FaExclamationTriangle, FaCrown, FaBook, FaFire } from "react-icons/fa";
+import { FaExclamationTriangle, FaCrown, FaBook, FaFire } from "react-icons/fa";
 
 export default function ProfilePage() {
   const [username, setUsername] = useState<string>("Loading...");
@@ -30,9 +30,8 @@ export default function ProfilePage() {
 
   const router = useRouter();
 
-  // Monitor active quizzes in real-time with enhanced debugging and force refresh
   useEffect(() => {
-    console.log("Setting up quiz monitoring...");
+    // console.log("Setting up quiz monitoring...");
 
     const q = query(collection(db, "quizzes"), where("activeQuiz", "==", 1));
 
@@ -134,8 +133,12 @@ export default function ProfilePage() {
             </div>
           </div>
           <div>
-            <h3 className="text-blue-800 font-bold text-lg">Scanning for Quizzes</h3>
-            <p className="text-blue-600 text-sm mt-1">Searching for active Bible challenges...</p>
+            <h3 className="text-blue-800 font-bold text-lg">
+              Scanning for Quizzes
+            </h3>
+            <p className="text-blue-600 text-sm mt-1">
+              Searching for active Bible challenges...
+            </p>
           </div>
           <div className="ml-auto">
             <div className="w-6 h-6 bg-blue-300 rounded-full animate-bounce"></div>
@@ -147,34 +150,31 @@ export default function ProfilePage() {
     if (activeQuiz) {
       return (
         <div className="relative bg-gradient-to-r from-green-100 via-emerald-100 to-teal-100 border-l-4 border-green-500 rounded-xl p-6 mb-8 shadow-md hover:shadow-lg transition-all duration-500 transform hover:-translate-y-1 group">
-          <div className="absolute top-0 right-0 w-24 h-24 -mt-8 -mr-8 bg-green-300 rounded-full opacity-20"></div>
-          <div className="absolute bottom-0 left-0 w-16 h-16 -mb-6 -ml-6 bg-green-400 rounded-full opacity-30"></div>
-          
           <div className="flex items-start relative z-10">
-            <div className="bg-gradient-to-r from-green-300 to-teal-300 p-4 rounded-full mr-5 flex-shrink-0 shadow-md">
+            {/* <div className="bg-gradient-to-r from-green-300 to-teal-300 p-4 rounded-full mr-5 flex-shrink-0 shadow-md">
               <FaBell className="text-white text-2xl" />
-            </div>
+            </div> */}
             <div className="flex-grow">
               <h3 className="text-green-900 font-extrabold text-2xl mb-2 flex items-center">
-                <span className="mr-3">🎉 Quiz Available Now!</span>
-                <span className="bg-gradient-to-r from-green-500 to-teal-500 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">
-                  LIVE NOW
+                {/* <span className="mr-3">Quiz Available Now!</span> */}
+                <span className="bg-gradient-to-r from-orange-500 via-red-500 to-yellow-400 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse flex items-center gap-1 shadow-lg shadow-orange-400/50">
+                  Live{" "}
+                  <FaFire className="text-yellow-200 drop-shadow-[0_0_4px_rgba(255,200,0,0.9)]" />
                 </span>
               </h3>
               <p className="text-green-800 mb-3 text-lg">
                 <span className="font-black bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
                   {activeQuiz.quizTitle || "Bible Trivia Challenge"}
-                </span> is now active! Test your knowledge of scripture.
+                </span>{" "}
+                is now active!
               </p>
               {activeQuiz.description && (
                 <div className="bg-white bg-opacity-70 p-4 rounded-xl border border-green-200 shadow-sm mb-4">
-                  <p className="text-green-700 text-sm">{activeQuiz.description}</p>
+                  <p className="text-green-700 text-sm">
+                    {activeQuiz.description}
+                  </p>
                 </div>
               )}
-              <button className="mt-4 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 group-hover:shadow-2xl flex items-center">
-                <FaFire className="mr-2" />
-                Join Quiz Now
-              </button>
             </div>
           </div>
         </div>
@@ -188,9 +188,12 @@ export default function ProfilePage() {
             <FaExclamationTriangle className="text-white text-2xl" />
           </div>
           <div>
-            <h3 className="text-amber-900 font-extrabold text-2xl mb-2">No Active Quiz</h3>
+            <h3 className="text-amber-900 font-extrabold text-2xl mb-2">
+              No Active Quiz
+            </h3>
             <p className="text-amber-800 mb-3 text-lg">
-              There&apos;s no quiz available at the moment. Check back later for new challenges!
+              There&apos;s no quiz available at the moment. Check back later for
+              new challenges!
             </p>
             <div className="bg-white bg-opacity-70 p-4 rounded-xl border border-amber-200 shadow-sm mt-4">
               <p className="text-amber-700 text-sm flex items-center">
@@ -203,7 +206,6 @@ export default function ProfilePage() {
       </div>
     );
   }, [quizLoading, activeQuiz]);
-
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
@@ -224,25 +226,14 @@ export default function ProfilePage() {
                   <FaBook className="text-blue-600 text-3xl" />
                 </div>
               </div>
-              <p className="text-gray-600 font-medium mt-6 text-lg">Loading your spiritual journey...</p>
-              <p className="text-gray-400 mt-2">Preparing Bible wisdom for you</p>
+
+              <p className="text-gray-400 mt-2">Please wait</p>
             </div>
           </Box>
         ) : (
           <main className="max-w-6xl mx-auto">
-            {/* Removed the showWelcome block here */}
-
-            <div className="mb-8 text-center">
-              <h2 className="text-3xl font-black text-gray-800 mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Bible Trivia Dashboard
-              </h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                Test your knowledge, climb the leaderboard, and deepen your understanding of Scripture
-              </p>
-            </div>
-            
             <QuizPrompt />
-            
+
             <Dashboard
               key={dashboardKey}
               activeQuiz={activeQuiz}
@@ -275,7 +266,9 @@ export default function ProfilePage() {
               </div>
               Bible Trivia App
             </div>
-            <div className="text-sm font-medium">© {new Date().getFullYear()} All rights reserved</div>
+            <div className="text-sm font-medium">
+              © {new Date().getFullYear()} All rights reserved
+            </div>
           </div>
         </div>
       </footer>

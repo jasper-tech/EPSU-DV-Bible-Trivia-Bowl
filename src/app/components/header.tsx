@@ -8,7 +8,7 @@ import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 export default function Header({ username }: { username: string }) {
   const { logout } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
-  
+
   const handleLogout = async () => {
     setIsSigningOut(true);
     try {
@@ -29,7 +29,7 @@ export default function Header({ username }: { username: string }) {
           </div>
           <div>
             <h1 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-              Bible Trivia App
+              Participant
             </h1>
             <p className="text-xl font-semibold text-gray-800">
               Welcome, <span className="text-blue-600">{username}</span>
