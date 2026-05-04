@@ -84,9 +84,9 @@ const NormalQuiz = () => {
 
   // Handle Quiz Submission (Save to Firestore)
   const handleSubmitQuiz = async () => {
-    console.log("Submit function called");
-    console.log("Title:", quizTitle);
-    console.log("Selected rows:", selectedRows);
+    // console.log("Submit function called");
+    // console.log("Title:", quizTitle);
+    // console.log("Selected rows:", selectedRows);
 
     if (selectedRows.length === 0 || !quizTitle.trim()) {
       console.log("Validation failed");
@@ -95,7 +95,7 @@ const NormalQuiz = () => {
     }
 
     setSubmitting(true);
-    console.log("Submitting Quiz...");
+    // console.log("Submitting Quiz...");
 
     try {
       const selectedQuestions = questions.filter((q) =>
@@ -115,6 +115,7 @@ const NormalQuiz = () => {
         text: q.text,
         answers: q.answers,
         correctAnswerId: q.correctAnswerId,
+        explanation: q.explanation,
       }));
 
       const quizDoc = {

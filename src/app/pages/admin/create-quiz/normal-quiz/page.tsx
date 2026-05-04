@@ -117,6 +117,7 @@ const NormalQuiz = () => {
         text: q.text,
         answers: q.answers,
         correctAnswerId: q.correctAnswerId,
+        explanation: q.explanation,
       }));
 
       const quizDoc = {

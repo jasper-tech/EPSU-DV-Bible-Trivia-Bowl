@@ -37,7 +37,8 @@ const AdminQuizSelection: React.FC = () => {
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState<boolean>(false);
 
-  // Timer input states
+  // Replace the two timer states with three:
+  const [quizDurationHours, setQuizDurationHours] = useState<number>(0);
   const [quizDurationMinutes, setQuizDurationMinutes] = useState<number>(5);
   const [quizDurationSeconds, setQuizDurationSeconds] = useState<number>(0);
 
@@ -115,7 +116,8 @@ const AdminQuizSelection: React.FC = () => {
 
         // Update timer inputs based on existing duration
         const existingDuration = quizData.quizDuration || 300;
-        setQuizDurationMinutes(Math.floor(existingDuration / 60));
+        setQuizDurationHours(Math.floor(existingDuration / 3600));
+        setQuizDurationMinutes(Math.floor((existingDuration % 3600) / 60));
         setQuizDurationSeconds(existingDuration % 60);
         return;
       }
@@ -151,18 +153,24 @@ const AdminQuizSelection: React.FC = () => {
 
   // Calculate total duration in seconds
   const getTotalDurationInSeconds = (): number => {
-    return quizDurationMinutes * 60 + quizDurationSeconds;
+    return (
+      quizDurationHours * 3600 + quizDurationMinutes * 60 + quizDurationSeconds
+    );
   };
 
-  // Handle timer input changes
+  const handleHoursChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const hours = parseInt(event.target.value) || 0;
+    setQuizDurationHours(Math.max(0, Math.min(24, hours)));
+  };
+
   const handleMinutesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const minutes = parseInt(event.target.value) || 0;
-    setQuizDurationMinutes(Math.max(0, Math.min(60, minutes))); // Limit between 0-60
+    setQuizDurationMinutes(Math.max(0, Math.min(59, minutes)));
   };
 
   const handleSecondsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const seconds = parseInt(event.target.value) || 0;
-    setQuizDurationSeconds(Math.max(0, Math.min(59, seconds))); // Limit between 0-59
+    setQuizDurationSeconds(Math.max(0, Math.min(59, seconds)));
   };
 
   const handleUpload = async () => {
@@ -267,11 +275,26 @@ const AdminQuizSelection: React.FC = () => {
                 Quiz Duration:
               </label>
               <div className="flex items-center space-x-4">
+                {/* Hours */}
                 <div className="flex items-center space-x-2">
                   <input
                     type="number"
                     min="0"
-                    max="60"
+                    max="24"
+                    value={quizDurationHours}
+                    onChange={handleHoursChange}
+                    className="w-20 px-3 py-2 border rounded-md text-center"
+                    disabled={isUploading}
+                  />
+                  <span className="text-gray-600 font-medium">hours</span>
+                </div>
+
+                {/* Minutes */}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
                     value={quizDurationMinutes}
                     onChange={handleMinutesChange}
                     className="w-20 px-3 py-2 border rounded-md text-center"
@@ -280,6 +303,7 @@ const AdminQuizSelection: React.FC = () => {
                   <span className="text-gray-600 font-medium">minutes</span>
                 </div>
 
+                {/* Seconds */}
                 <div className="flex items-center space-x-2">
                   <input
                     type="number"
@@ -292,19 +316,6 @@ const AdminQuizSelection: React.FC = () => {
                   />
                   <span className="text-gray-600 font-medium">seconds</span>
                 </div>
-              </div>
-
-              <div className="mt-2 text-sm text-gray-600">
-                Total duration:{" "}
-                <span className="font-semibold">
-                  {getTotalDurationInSeconds()} seconds
-                </span>
-                {getTotalDurationInSeconds() > 0 && (
-                  <span className="ml-2">
-                    ({quizDurationMinutes}:
-                    {quizDurationSeconds.toString().padStart(2, "0")})
-                  </span>
-                )}
               </div>
             </div>
           )}

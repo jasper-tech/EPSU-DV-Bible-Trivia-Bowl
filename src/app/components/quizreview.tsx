@@ -263,6 +263,20 @@ const QuizReview: React.FC<QuizReviewProps> = ({
         //   y
         // );
         // y += 4;
+        // Add this just before the divider line at the bottom of each question block
+        if (question.explanation) {
+          const explanationLines = wrapText(
+            `Explanation: ${question.explanation}`,
+            contentWidth - 6,
+            10
+          );
+          checkPageBreak(explanationLines.length * 5 + 6);
+
+          pdf.setFont("helvetica", "italic");
+          pdf.setFontSize(10);
+          pdf.text(explanationLines, margin + 6, y);
+          y += explanationLines.length * 5 + 2;
+        }
 
         // Divider between questions
         pdf.setDrawColor(180);
@@ -381,12 +395,12 @@ const QuizReview: React.FC<QuizReviewProps> = ({
 
           <Typography variant="body2" color="textSecondary">
             {percentage >= 90
-              ? "Excellent work! You have a strong understanding of the bible."
+              ? "Excellent work!"
               : percentage >= 70
-              ? "Good job! You have a solid grasp of biblical stories."
+              ? "Good job!"
               : percentage >= 50
-              ? "Fair performance. Consider reading your bible more often."
-              : "Keep studying! Focus on the word of God."}
+              ? "Fair performance."
+              : "Keep studying!."}
           </Typography>
         </Paper>
 
@@ -396,6 +410,13 @@ const QuizReview: React.FC<QuizReviewProps> = ({
         </Typography>
 
         {questions.map((question, index) => {
+          console.log(
+            "Explanation for question",
+            index + 1,
+            ":",
+            question.explanation
+          );
+
           const userAnswer = userAnswers.find(
             (ua) => ua.questionId === question.id
           );
@@ -471,11 +492,6 @@ const QuizReview: React.FC<QuizReviewProps> = ({
 
               <AccordionDetails>
                 <Box>
-                  {/* Full Question */}
-                  <Typography variant="h6" gutterBottom>
-                    {question.text}
-                  </Typography>
-
                   <Divider sx={{ my: 2 }} />
 
                   {/* User's Answer */}
@@ -622,8 +638,30 @@ const QuizReview: React.FC<QuizReviewProps> = ({
                     </Box>
                   )}
 
+                  {question.explanation && (
+                    <Box
+                      sx={{
+                        mt: 2,
+                        p: 2,
+                        backgroundColor: "#fffde7",
+                        border: "1px solid #fff176",
+                        borderRadius: 1,
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ mb: 0.5, fontWeight: "bold" }}
+                      >
+                        Explanation:
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        {question.explanation}
+                      </Typography>
+                    </Box>
+                  )}
+
                   {/* Response Time */}
-                  <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #e0e0e0" }}>
+                  {/* <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #e0e0e0" }}>
                     <Typography variant="caption" color="textSecondary">
                       Response Time: {responseTime.toFixed(2)} seconds
                       {responseTime > averageResponseTime + 5 &&
@@ -631,7 +669,7 @@ const QuizReview: React.FC<QuizReviewProps> = ({
                       {responseTime < averageResponseTime - 5 &&
                         " (Faster than average)"}
                     </Typography>
-                  </Box>
+                  </Box> */}
                 </Box>
               </AccordionDetails>
             </Accordion>

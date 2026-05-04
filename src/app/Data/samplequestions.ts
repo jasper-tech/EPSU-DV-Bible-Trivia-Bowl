@@ -45,8 +45,8 @@ export function useFetchQuestions() {
           );
 
           // Explicitly type questionType as "text" | "multiple-choice"
-          const questionType: "text" | "multiple-choice" =
-            processedAnswers.length > 1 ? "multiple-choice" : "text";
+          const questionType: "multiple-choice" | "text-input" =
+            processedAnswers.length > 1 ? "multiple-choice" : "text-input";
 
           if (questionType === "multiple-choice" && !q.correctAnswerId) {
             console.warn(
