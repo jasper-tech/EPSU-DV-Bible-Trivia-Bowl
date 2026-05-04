@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -20,7 +20,6 @@ import {
   ExpandMore as ExpandAllIcon,
 } from "@mui/icons-material";
 import { Question } from "../types/quiz";
-import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 interface UserAnswer {
@@ -49,7 +48,27 @@ const QuizReview: React.FC<QuizReviewProps> = ({
 }) => {
   const reviewRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [allExpanded, setAllExpanded] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<boolean[]>([]);
+
+  // Initialise one controlled boolean per question
+  useEffect(() => {
+    setExpandedItems(new Array(questions.length).fill(false));
+  }, [questions.length]);
+
+  const allExpanded = expandedItems.length > 0 && expandedItems.every(Boolean);
+
+  const handleToggleAll = () => {
+    const next = !allExpanded;
+    setExpandedItems(new Array(questions.length).fill(next));
+  };
+
+  const handleToggleItem = (index: number) => {
+    setExpandedItems((prev) => {
+      const updated = [...prev];
+      updated[index] = !updated[index];
+      return updated;
+    });
+  };
 
   // Helper function to get user's answer text
   const getUserAnswerText = (question: Question, userAnswer: UserAnswer) => {
@@ -79,88 +98,184 @@ const QuizReview: React.FC<QuizReviewProps> = ({
   const percentage = Math.round((score / totalQuestions) * 100);
 
   const handleDownloadPDF = async () => {
-    if (!reviewRef.current) return;
-
     setIsDownloading(true);
 
-    // Expand all accordions first
-    setAllExpanded(true);
-
-    // Wait for accordion animations to complete
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
     try {
-      const element = reviewRef.current;
       const pdf = new jsPDF("p", "mm", "a4");
-
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 10;
+      const margin = 20;
       const contentWidth = pageWidth - margin * 2;
+      let y = margin;
 
-      // Capture the full element — html2canvas handles long content
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        // Capture the full scrollable height, not just the visible viewport
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-        scrollX: 0,
-        scrollY: 0,
-        // Override height to capture all content
-        height: element.scrollHeight,
-        width: element.scrollWidth,
+      const checkPageBreak = (neededHeight: number) => {
+        if (y + neededHeight > pageHeight - margin) {
+          pdf.addPage();
+          y = margin;
+        }
+      };
+
+      const wrapText = (
+        text: string,
+        maxWidth: number,
+        fontSize: number
+      ): string[] => {
+        pdf.setFontSize(fontSize);
+        return pdf.splitTextToSize(text, maxWidth);
+      };
+
+      // ── Header ──────────────────────────────────────────────────────────────
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(18);
+      pdf.text(quizTitle ?? "Quiz Review", pageWidth / 2, y, {
+        align: "center",
       });
+      y += 8;
 
-      // Calculate dimensions to fit into PDF pages
-      const imgWidth = contentWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      const dateStr = new Date().toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      });
+      pdf.text(`Date: ${dateStr}`, pageWidth / 2, y, { align: "center" });
+      y += 5;
 
-      const usablePageHeight = pageHeight - margin * 2;
-      const totalPages = Math.ceil(imgHeight / usablePageHeight);
+      // ── Summary bar ──
+      pdf.setDrawColor(0);
+      pdf.setLineWidth(0.3);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 5;
 
-      for (let page = 0; page < totalPages; page++) {
-        if (page > 0) pdf.addPage();
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(10);
+      pdf.text(
+        `Score: ${score} / ${totalQuestions}  (${percentage}%)   |   Avg Response Time: ${averageResponseTime.toFixed(
+          1
+        )}s   |   Correct: ${correctAnswers}   Incorrect: ${incorrectAnswers}`,
+        pageWidth / 2,
+        y,
+        { align: "center" }
+      );
+      y += 5;
 
-        // Calculate which vertical slice of the image goes on this page
-        const sourceY = page * usablePageHeight * (canvas.height / imgHeight);
-        const sourceHeight = Math.min(
-          usablePageHeight * (canvas.height / imgHeight),
-          canvas.height - sourceY
+      pdf.setLineWidth(0.3);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 8;
+
+      // ── Questions ──
+      questions.forEach((question, index) => {
+        const userAnswer = userAnswers.find(
+          (ua) => ua.questionId === question.id
         );
+        const isCorrect = userAnswer?.isCorrect ?? false;
 
-        // Create a temporary canvas for this page's slice
-        const pageCanvas = document.createElement("canvas");
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sourceHeight;
+        // Question number + text
+        const questionLabel = `${index + 1}. ${question.text}`;
+        const questionLines = wrapText(questionLabel, contentWidth, 11);
+        checkPageBreak(questionLines.length * 5 + 30);
 
-        const ctx = pageCanvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(
-            canvas,
-            0,
-            sourceY,
-            canvas.width,
-            sourceHeight,
-            0,
-            0,
-            canvas.width,
-            sourceHeight
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(11);
+        pdf.text(questionLines, margin, y);
+        y += questionLines.length * 5 + 2;
+
+        // Answers
+        if (question.questionType === "multiple-choice") {
+          const optionLabels = ["A", "B", "C", "D", "E"];
+          question.answers.forEach((answer, ansIdx) => {
+            const isCorrectOption = answer.id === question.correctAnswerId;
+            const isUserSelected = userAnswer?.answerId === answer.id;
+
+            const prefix = `${optionLabels[ansIdx] ?? ansIdx + 1}.`;
+            const answerLines = wrapText(
+              `${prefix}  ${answer.text}`,
+              contentWidth - 8,
+              10
+            );
+            checkPageBreak(answerLines.length * 5 + 4);
+
+            if (isCorrectOption) {
+              // Bold + underline correct answer
+              pdf.setFont("helvetica", "bold");
+              pdf.setFontSize(10);
+              pdf.text(answerLines, margin + 6, y);
+              // underline first line
+              const lineW = pdf.getTextWidth(answerLines[0]);
+              pdf.setLineWidth(0.2);
+              pdf.line(margin + 6, y + 0.8, margin + 6 + lineW, y + 0.8);
+            } else {
+              pdf.setFont("helvetica", "normal");
+              pdf.setFontSize(10);
+              pdf.text(answerLines, margin + 6, y);
+            }
+
+            // Mark user's wrong choice
+            if (isUserSelected && !isCorrectOption) {
+              pdf.setFont("helvetica", "italic");
+              pdf.setFontSize(8);
+              const tag = "(Your answer — incorrect)";
+              pdf.text(tag, pageWidth - margin, y, { align: "right" });
+            }
+
+            y += answerLines.length * 5 + 1;
+          });
+        } else {
+          // Short-answer / fill-in
+          const correctAnswer = question.answers.find(
+            (a) => a.id === question.correctAnswerId
           );
+          const userText = userAnswer?.answerId || "No answer provided";
+
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(10);
+          const yourLines = wrapText(
+            `Your answer: ${userText}`,
+            contentWidth - 6,
+            10
+          );
+          checkPageBreak(yourLines.length * 5 + 8);
+          pdf.text(yourLines, margin + 6, y);
+          y += yourLines.length * 5 + 1;
+
+          if (!isCorrect && correctAnswer) {
+            pdf.setFont("helvetica", "bold");
+            const corrLines = wrapText(
+              `Correct answer: ${correctAnswer.text}`,
+              contentWidth - 6,
+              10
+            );
+            checkPageBreak(corrLines.length * 5 + 4);
+            pdf.text(corrLines, margin + 6, y);
+            y += corrLines.length * 5 + 1;
+          }
         }
 
-        const pageImgData = pageCanvas.toDataURL("image/png");
-        const sliceHeight = (sourceHeight * imgWidth) / canvas.width;
+        // Result + response time footer for each question
+        // pdf.setFont("helvetica", "italic");
+        // pdf.setFontSize(8);
+        // pdf.text(
+        //   `${
+        //     isCorrect ? "✓ Correct" : "✗ Incorrect"
+        //   }   |   Response time: ${responseTime.toFixed(1)}s`,
+        //   margin + 6,
+        //   y
+        // );
+        // y += 4;
 
-        pdf.addImage(pageImgData, "PNG", margin, margin, imgWidth, sliceHeight);
-      }
+        // Divider between questions
+        pdf.setDrawColor(180);
+        pdf.setLineWidth(0.2);
+        pdf.line(margin, y, pageWidth - margin, y);
+        pdf.setDrawColor(0);
+        y += 6;
+      });
 
       pdf.save(`${quizTitle ?? "quiz"}-review.pdf`);
-    } catch (error) {
-      console.error("Error generating PDF:", error);
+    } catch (err) {
+      console.error("Error generating PDF:", err);
     } finally {
-      setAllExpanded(false);
       setIsDownloading(false);
     }
   };
@@ -181,7 +296,7 @@ const QuizReview: React.FC<QuizReviewProps> = ({
           variant="outlined"
           size="small"
           startIcon={<ExpandAllIcon />}
-          onClick={() => setAllExpanded((prev) => !prev)}
+          onClick={handleToggleAll}
         >
           {allExpanded ? "Collapse All" : "Expand All"}
         </Button>
@@ -290,7 +405,8 @@ const QuizReview: React.FC<QuizReviewProps> = ({
           return (
             <Accordion
               key={question.id}
-              expanded={allExpanded || undefined}
+              expanded={!!expandedItems[index]}
+              onChange={() => handleToggleItem(index)}
               sx={{
                 mb: 1,
                 "&:before": { display: "none" },

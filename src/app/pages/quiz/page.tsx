@@ -10,7 +10,7 @@ import {
   Modal,
   Button,
 } from "@mui/material";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Answer, QuizState } from "../../types/quiz";
 import { useFetchQuestions } from "../../Data/samplequestions";
 import ScoreBanner from "../../components/scorebanner";
@@ -31,6 +31,12 @@ interface CompletedQuizResult {
   totalQuestions: number;
   percentage: number;
   timestamp: any;
+  userAnswers: Array<{
+    questionId: string;
+    answerId: string;
+    isCorrect: boolean;
+    responseTime: number;
+  }>;
 }
 
 const Quiz: React.FC = () => {
@@ -46,6 +52,7 @@ const Quiz: React.FC = () => {
   });
 
   const [totalQuizTime, setTotalQuizTime] = useState<number>(300);
+  const [cameFromModal, setCameFromModal] = useState<boolean>(false);
   const [timeRemaining, setTimeRemaining] = useState<number>(300);
   const [isTimerActive, setIsTimerActive] = useState<boolean>(false);
   const [showScore, setShowScore] = useState<boolean>(false);
@@ -55,6 +62,8 @@ const Quiz: React.FC = () => {
 
   const [isCheckingCompletion, setIsCheckingCompletion] =
     useState<boolean>(false);
+  const isNewCompletion = useRef<boolean>(false);
+
   const [showCompletionModal, setShowCompletionModal] =
     useState<boolean>(false);
   const [completedQuizData, setCompletedQuizData] =
@@ -153,7 +162,10 @@ const Quiz: React.FC = () => {
     if (quizState.isQuizCompleted) {
       setIsTimerActive(false);
       setShowScore(true);
-      saveScoreToFirestore();
+      if (isNewCompletion.current) {
+        saveScoreToFirestore();
+        isNewCompletion.current = false;
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizState.isQuizCompleted]);
@@ -247,6 +259,10 @@ const Quiz: React.FC = () => {
   const handleNextQuestion = () => {
     const nextIndex = quizState.currentQuestionIndex + 1;
 
+    if (nextIndex >= questions.length) {
+      isNewCompletion.current = true;
+    }
+
     setQuizState((prev) => ({
       ...prev,
       ...(nextIndex >= questions.length
@@ -256,6 +272,7 @@ const Quiz: React.FC = () => {
   };
 
   const handleTimeUp = () => {
+    isNewCompletion.current = true;
     if (currentQuestion && quizState.isAnswerCorrect === null) {
       const responseTime = (Date.now() - questionStartTime) / 1000;
       setResponseTimes((prev) => [...prev, responseTime]);
@@ -304,7 +321,11 @@ const Quiz: React.FC = () => {
   };
 
   const handleBackToResults = () => {
-    setShowReview(false);
+    if (cameFromModal) {
+      window.location.href = "/pages/leaderboard";
+    } else {
+      setShowReview(false);
+    }
   };
 
   if (loading || isCheckingCompletion) {
@@ -320,7 +341,7 @@ const Quiz: React.FC = () => {
     );
   }
 
-  if (error || !currentQuestion) {
+  if (error || (!currentQuestion && !quizState.isQuizCompleted)) {
     return (
       <div className="flex flex-col items-center justify-center p-4 min-h-screen">
         <div className="text-xl text-red-600 font-semibold mb-4">
@@ -354,7 +375,7 @@ const Quiz: React.FC = () => {
             onClick={handleBackToResults}
             className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md transition duration-200"
           >
-            ← Back to Results
+            {cameFromModal ? "← Back to Leaderboard" : "← Back to Results"}
           </button>
         </div>
 
@@ -412,14 +433,36 @@ const Quiz: React.FC = () => {
               </>
             )}
           </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleCompletionModalClose}
-            sx={{ mt: 2 }}
+          <Box
+            sx={{ display: "flex", gap: 2, mt: 2, justifyContent: "center" }}
           >
-            View Leaderboard
-          </Button>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={() => {
+                setShowCompletionModal(false);
+                setCameFromModal(true);
+                setQuizState((prev) => ({
+                  ...prev,
+                  score: completedQuizData?.score ?? 0,
+                  isQuizCompleted: true,
+                  userAnswers: completedQuizData?.userAnswers ?? [],
+                }));
+                setShowScore(true);
+                setShowReview(true);
+              }}
+            >
+              Review Answers
+            </Button>
+
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleCompletionModalClose}
+            >
+              View Leaderboard
+            </Button>
+          </Box>
         </Box>
       </Modal>
 
@@ -450,18 +493,18 @@ const Quiz: React.FC = () => {
               </div>
 
               <QuestionCard
-                question={currentQuestion}
+                question={currentQuestion!}
                 questionNumber={quizState.currentQuestionIndex + 1}
                 totalQuestions={questions.length}
               />
 
               <AnswerBox
-                answers={currentQuestion.answers}
+                answers={currentQuestion!.answers}
                 onSubmit={handleSubmitAnswer}
                 isAnswerCorrect={quizState.isAnswerCorrect}
-                correctAnswerId={currentQuestion.correctAnswerId}
+                correctAnswerId={currentQuestion!.correctAnswerId}
                 disabled={quizState.isAnswerCorrect !== null}
-                questionType={currentQuestion.questionType}
+                questionType={currentQuestion!.questionType}
               />
             </>
           ) : (

@@ -62,7 +62,7 @@ export default function Dashboard({ activeQuiz, quizLoading }: DashboardProps) {
     // All checks passed, proceed to quiz
     toast.success("Launching quiz...");
     setTargetPath("/pages/quiz");
-    setLoadingMessage("Preparing Bible Quiz...");
+    setLoadingMessage("loading...");
     setManualLoading(true);
   };
 
@@ -84,7 +84,7 @@ export default function Dashboard({ activeQuiz, quizLoading }: DashboardProps) {
   return (
     <section className="bg-gradient-to-br from-white to-blue-50 shadow-md p-8 rounded-2xl w-full max-w-4xl mx-auto border border-blue-100">
       <h2 className="text-3xl font-black mb-8 text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-        Bible Challenge Hub
+        Quiz Hub
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
